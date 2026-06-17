@@ -1,6 +1,10 @@
 # Personal / non-project files
 JOB/
 
+# Local Claude config & skills (kept on disk, not versioned)
+.claude/skills/
+.claude/settings.local.json
+
 # Python
 __pycache__/
 *.py[cod]
