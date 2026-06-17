@@ -3,7 +3,7 @@
 **Context:** Personal project to demonstrate end-to-end AI Engineering skills for job applications.
 **Hardware budget:** 1 laptop + Google **Colab Pro** subscription. Goal is **$0 extra spend** beyond Colab Pro.
 
-> **Assumption to confirm:** This doc assumes the laptop has **no (or only a small) NVIDIA GPU** and ~16 GB RAM — i.e. CPU-class local inference. Where a *local discrete GPU* changes the verdict, it's called out. Please confirm laptop specs (RAM, GPU/VRAM, OS) so the plan can be tightened.
+> **Confirmed:** The laptop has **no discrete GPU** — CPU-class local inference only. All "local serving" in this doc means CPU (ONNX/INT8). GPU work happens exclusively on Colab Pro (batch). This is the binding constraint that shapes the whole plan.
 
 ---
 
