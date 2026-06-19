@@ -1,109 +1,107 @@
-# CLAUDE.md
+# Project: Document AI Platform
 
-# Project Overview
+## Tech Stack
 
-This project is a production-oriented Document AI system that transforms unstructured documents into structured, validated, and queryable information.
+* Python 3.12+
+* uv
+* FastAPI
+* PyTorch + ONNX Runtime
+* Pydantic
+* MLflow
+* Docker
+* pytest
+* ruff + mypy
 
-The architecture includes:
+## What We Build
 
-* Layout Detection
-* OCR Pipeline
-* Document Understanding / Key Information Extraction
-* Vision-Language Models
-* Validation Layer
-* FastAPI Serving
-* MLflow Registry
-* Docker Deployment
-* CI/CD
-* Monitoring & Logging
+A production-oriented Document AI pipeline:
 
-The objective is to build a modular, maintainable, and production-ready AI system rather than a notebook prototype.
-
----
-
-# Development Principles
-
-* Prioritize simplicity over cleverness.
-* Write maintainable and modular code.
-* Favor composition over tightly coupled components.
-* Keep business logic separate from model inference.
-* Every component should be independently testable.
-
----
-
-# Coding Standards
-
-* Use Python 3.12+
-* Follow PEP8 and type hints
-* Prefer async APIs when appropriate
-* Use dataclasses or Pydantic models for structured data
-* Avoid hardcoded constants
-* Write descriptive function and variable names
-
----
-
-# Architecture
-
-Always think in terms of pipelines and services instead of scripts.
-
-Prefer:
-
+```
 Document
-→ Layout
+→ Layout Detection
 → OCR
 → Information Extraction
 → Validation
 → API
-→ Monitoring
+```
 
-instead of monolithic implementations.
-
----
-
-# AI Engineering Principles
-
-When proposing solutions, always consider:
-
-* Accuracy
-* Latency
-* GPU Cost
-* Throughput
-* Scalability
-* Reliability
-* Maintainability
-
-Do not optimize for model accuracy alone.
-
-Always discuss production trade-offs.
+Build for modularity, maintainability, and reproducibility.
 
 ---
 
-# Collaboration Style
+# Coding Standard
 
-Before implementing:
-
-1. Understand the requirement.
-2. Explain the proposed approach.
-3. Identify potential risks.
-4. Suggest a clean architecture.
-5. Implement incrementally.
-
-Avoid making large refactors without justification.
+* Python with full type hints.
+* Prefer **functional components over classes**.
+* Keep functions small and focused.
+* No hardcoded constants.
+* Configuration lives in settings/env.
+* Follow existing project style.
 
 ---
 
-# Response Style
+# Commit Standard
 
-Be concise and technical.
+**Never commit automatically.**
 
-Prefer concrete implementation details over generic explanations.
+Before every commit:
 
-When multiple solutions exist, compare their advantages, disadvantages, and production implications.
-
-Challenge assumptions when appropriate instead of automatically agreeing.
+* Explain what changed.
+* Summarize affected files.
+* Ask for confirmation.
+* Commit only after approval.
 
 ---
 
-# Project Goal
+# Phase-by-Phase Development
 
-Build an enterprise-grade Document AI platform that demonstrates real-world AI engineering practices, including model orchestration, deployment, observability, validation, and scalable system design.
+Every phase follows the same workflow:
+
+1. **Explore** – understand requirements and existing code.
+2. **Plan** – propose architecture and trade-offs.
+3. **Code** – implement the minimum required solution.
+4. **Test** – format, lint, type-check, and verify behavior.
+5. **Review** – summarize changes and identify improvements.
+
+Each phase is a consecutive implementation of the project.
+
+Example:
+
+* Phase 0: Planning & project setup
+* Phase 1: Repository initialization
+* Phase 2: Layout Detection
+* Phase 3: OCR
+* Phase 4: Information Extraction
+* ...
+
+---
+
+# Engineering Rules
+
+### Don't Assume
+
+* State assumptions explicitly.
+* If uncertain, ask.
+* Present multiple interpretations instead of silently choosing one.
+* Surface trade-offs.
+* Stop when requirements are unclear.
+
+### Keep It Simple
+
+* Write the minimum code that solves the problem.
+* No speculative features.
+* No unnecessary abstractions.
+* No configurability unless requested.
+* If a solution can be simpler, prefer the simpler one.
+
+### Minimal Changes
+
+When modifying existing code:
+
+* Touch only what is necessary.
+* Don't refactor unrelated code.
+* Match the existing style.
+* Remove only imports or variables made unused by your own changes.
+* Mention unrelated issues instead of fixing them.
+
+Every changed line should directly support the requested task.
