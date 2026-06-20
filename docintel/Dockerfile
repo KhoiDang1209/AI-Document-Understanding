@@ -9,10 +9,21 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR /app
 
+# OpenCV (non-headless) runtime libs — libglib2.0-0 for GLib, libgl1 for libGL.so.1
+# (docTR pulls non-headless opencv-python as a transitive dep; libgl1 is required).
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libglib2.0-0 libgl1 \
+    && rm -rf /var/lib/apt/lists/*
+
 # Install dependencies first for better layer caching.
 COPY pyproject.toml README.md ./
 COPY src ./src
-RUN pip install .
+# Pin a CPU-only torch/torchvision (PyPI's default Linux wheel is CUDA — huge),
+# then install the project against the already-satisfied CPU build.
+RUN pip install --index-url https://download.pytorch.org/whl/cpu torch torchvision \
+    && pip install .
+# Bake docTR weights into the image so the running container needs no network.
+RUN python -c "from doctr.models import ocr_predictor; ocr_predictor(pretrained=True)"
 
 EXPOSE 8000
 
