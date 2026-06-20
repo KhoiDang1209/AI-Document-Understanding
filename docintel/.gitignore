@@ -17,8 +17,10 @@ venv/
 # Environment / secrets
 .env
 
-# Data & artifacts (DVC-tracked)
-data/raw/
+# Data & artifacts (DVC-tracked); DVC pointer files (.dvc) are tracked
+data/raw/**
+!data/raw/**/
+!data/raw/**/*.dvc
 data/processed/
 mlruns/
 *.onnx

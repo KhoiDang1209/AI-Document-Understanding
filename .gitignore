@@ -57,3 +57,10 @@ logs/
 .vscode/
 .DS_Store
 Thumbs.db
+
+# DVC: track pointer files and keep-files, not the raw data they point to
+!docintel/data/
+docintel/data/**
+!docintel/data/.gitkeep
+!docintel/data/**/
+!docintel/data/**/*.dvc

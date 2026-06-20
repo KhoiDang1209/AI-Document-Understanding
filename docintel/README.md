@@ -39,7 +39,16 @@ Brings up the API (`:8000`), MLflow (`:5000`), and MinIO (`:9000`, console
 
 ```bash
 pip install -e ".[data]"
-docintel-download-data --dataset cord    # or: sroie
+docintel-download-data --dataset cord    # or: sroie  -> data/raw/<dataset>
+```
+
+Track the downloaded data with DVC (pointers are versioned in git, the data
+itself goes to the DVC remote):
+
+```bash
+dvc add docintel/data/raw/cord       # creates docintel/data/raw/cord.dvc
+dvc push                             # pushes to the configured local remote
+git add docintel/data/raw/cord.dvc   # raw data stays ignored by data/raw/** rules
 ```
 
 ## Layout
