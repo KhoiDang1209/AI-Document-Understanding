@@ -48,7 +48,7 @@ async def extract(
     max_bytes = int(settings.max_upload_mb * 1024 * 1024)
     if len(data) > max_bytes:
         raise HTTPException(
-            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            status_code=status.HTTP_413_CONTENT_TOO_LARGE,
             detail=f"Upload exceeds the {settings.max_upload_mb} MB limit.",
         )
 
