@@ -10,11 +10,9 @@ services:
       - .env
     environment:
       DOCINTEL_MLFLOW_TRACKING_URI: http://mlflow:5000
-      DOCINTEL_QDRANT_URL: http://qdrant:6333
       DOCINTEL_MINIO_ENDPOINT: minio:9000
     depends_on:
       - mlflow
-      - qdrant
       - minio
 
   mlflow:
@@ -29,14 +27,6 @@ services:
       - "5000:5000"
     volumes:
       - mlflow-data:/mlflow
-
-  qdrant:
-    image: qdrant/qdrant:v1.11.3
-    container_name: docintel-qdrant
-    ports:
-      - "6333:6333"
-    volumes:
-      - qdrant-data:/qdrant/storage
 
   minio:
     image: minio/minio:RELEASE.2024-09-22T00-33-43Z
@@ -53,5 +43,4 @@ services:
 
 volumes:
   mlflow-data:
-  qdrant-data:
   minio-data:

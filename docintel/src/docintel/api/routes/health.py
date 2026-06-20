@@ -24,8 +24,8 @@ class HealthResponse(BaseModel):
 def health() -> HealthResponse:
     """Return service liveness and identity.
 
-    Readiness checks for backing services (MLflow, Qdrant, MinIO) are added in
-    later phases as those dependencies come online.
+    Readiness checks for backing services (MLflow, MinIO) are added in later
+    phases as those dependencies come online.
     """
     settings = get_settings()
     return HealthResponse(

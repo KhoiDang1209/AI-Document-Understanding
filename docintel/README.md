@@ -32,8 +32,8 @@ cp .env.example .env
 docker compose up --build
 ```
 
-Brings up the API (`:8000`), MLflow (`:5000`), Qdrant (`:6333`), and MinIO
-(`:9000`, console `:9001`).
+Brings up the API (`:8000`), MLflow (`:5000`), and MinIO (`:9000`, console
+`:9001`). Qdrant (GraphRAG) and the monitoring stack arrive in later phases.
 
 ## Datasets (build-time)
 

@@ -36,7 +36,6 @@ class Settings(BaseSettings):
 
     # Backing services (used from later phases; defaults target docker-compose).
     mlflow_tracking_uri: str = "http://mlflow:5000"
-    qdrant_url: str = "http://qdrant:6333"
     minio_endpoint: str = "minio:9000"
     minio_access_key: str = "minioadmin"
     minio_secret_key: str = "minioadmin"
