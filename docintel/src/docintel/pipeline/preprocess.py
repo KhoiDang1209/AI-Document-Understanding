@@ -43,8 +43,11 @@ def _deskew(image: Image) -> Image:
     # Annotate the local: cv2 is untyped (Any), and strict mypy's
     # warn_return_any rejects returning Any from an -> Image function.
     rotated: Image = cv2.warpAffine(  # type: ignore[assignment]
-        image, matrix, (width, height),
-        flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REPLICATE,
+        image,
+        matrix,
+        (width, height),
+        flags=cv2.INTER_CUBIC,
+        borderMode=cv2.BORDER_REPLICATE,
     )
     return rotated
 
