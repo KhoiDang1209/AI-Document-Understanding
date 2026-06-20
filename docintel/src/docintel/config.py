@@ -43,6 +43,12 @@ class Settings(BaseSettings):
     # Filesystem
     data_dir: str = Field(default="data", description="Root directory for datasets.")
 
+    # OCR pipeline (Phase 1)
+    ocr_engine: Literal["doctr"] = "doctr"
+    preprocess_enabled: bool = False
+    preprocess_max_dim: int = 2000
+    max_upload_mb: float = 10.0
+
 
 @lru_cache
 def get_settings() -> Settings:

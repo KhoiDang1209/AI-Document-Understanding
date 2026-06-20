@@ -15,6 +15,11 @@ dependencies = [
     "uvicorn[standard]>=0.30",
     "pydantic>=2.7",
     "pydantic-settings>=2.3",
+    "python-doctr[torch]>=0.8",
+    "opencv-python-headless>=4.9",
+    "numpy>=1.26",
+    "Pillow>=10.3",
+    "python-multipart>=0.0.9",
 ]
 
 [project.optional-dependencies]
@@ -62,10 +67,13 @@ explicit_package_bases = true
 namespace_packages = true
 
 [[tool.mypy.overrides]]
-module = ["datasets.*", "huggingface_hub.*"]
+module = ["datasets.*", "huggingface_hub.*", "cv2.*", "doctr.*", "PIL.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-q"
+addopts = "-q -m 'not slow'"
 pythonpath = ["src"]
+markers = [
+    "slow: downloads models or runs real OCR; deselected by default",
+]

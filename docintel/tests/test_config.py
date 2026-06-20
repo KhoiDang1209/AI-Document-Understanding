@@ -20,3 +20,11 @@ def test_env_override(monkeypatch: pytest.MonkeyPatch) -> None:
     settings = Settings()
     assert settings.port == 9001
     assert settings.environment == "ci"
+
+
+def test_ocr_settings_defaults() -> None:
+    settings = Settings()
+    assert settings.ocr_engine == "doctr"
+    assert settings.preprocess_enabled is False
+    assert settings.preprocess_max_dim == 2000
+    assert settings.max_upload_mb == 10.0
