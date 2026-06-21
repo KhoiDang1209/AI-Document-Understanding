@@ -49,6 +49,10 @@ class Settings(BaseSettings):
     preprocess_max_dim: int = 2000
     max_upload_mb: float = 10.0
 
+    # KIE (Phase 2)
+    kie_model_name: str = "microsoft/layoutlmv3-base"
+    kie_registered_model_name: str = "cord-layoutlmv3"
+
 
 @lru_cache
 def get_settings() -> Settings:
