@@ -92,7 +92,7 @@ def run_training(
     Assumes ``mlflow.set_tracking_uri`` has been pointed at the Colab file-store
     by the caller (the notebook). Returns the bundle directory.
     """
-    import mlflow  # type: ignore[import-not-found]
+    import mlflow
     from transformers import (
         AutoModelForTokenClassification,
         Trainer,
