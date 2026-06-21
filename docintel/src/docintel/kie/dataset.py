@@ -49,13 +49,15 @@ def parse_cord_example(
     for line in ground_truth["valid_line"]:
         category = line["category"]
         begin, inside = bio_labels_for_category(category)
-        for position, word in enumerate(line["words"]):
+        appended = 0
+        for word in line["words"]:
             text = word["text"]
             if not text:
                 continue
             words.append(text)
             boxes.append(normalize_box(_quad_to_box(word["quad"]), width, height))
-            labels.append(begin if position == 0 else inside)
+            labels.append(begin if appended == 0 else inside)
+            appended += 1
     return words, boxes, labels
 
 
@@ -69,15 +71,22 @@ def collect_categories(ground_truths: Iterable[Mapping[str, Any]]) -> list[str]:
 
 
 def encode_example(
+    image: Any,
     words: Sequence[str],
     boxes: Sequence[Sequence[int]],
     bio_labels: Sequence[str],
     processor: Any,
     label2id: Mapping[str, int],
 ) -> dict[str, Any]:
-    """Tokenize one example, letting the processor align labels to subwords."""
+    """Tokenize one example with its image, letting the processor align labels to subwords.
+
+    ``apply_ocr=False`` is set when the processor is constructed (in the notebook),
+    so the provided words/boxes are used directly; the processor returns the token
+    encoding together with ``pixel_values``.
+    """
     word_label_ids = [label2id[label] for label in bio_labels]
     encoding: dict[str, Any] = processor(
+        image,
         text=list(words),
         boxes=[list(box) for box in boxes],
         word_labels=word_label_ids,

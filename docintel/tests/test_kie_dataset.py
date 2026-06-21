@@ -58,21 +58,39 @@ def test_collect_categories_is_sorted_and_unique() -> None:
     assert cats == ["menu.nm", "total.total_price"]
 
 
-def test_encode_example_calls_processor_without_ocr() -> None:
+def test_parse_cord_example_first_word_empty_still_starts_with_b() -> None:
+    gt = {
+        "meta": {"image_size": {"width": 100, "height": 200}},
+        "valid_line": [
+            {
+                "category": "menu.nm",
+                "words": [_word("", 0, 0, 5, 5), _word("Latte", 10, 20, 30, 40)],
+            },
+        ],
+    }
+    words, _boxes, labels = parse_cord_example(gt)
+    assert words == ["Latte"]
+    assert labels == ["B-menu.nm"]
+
+
+def test_encode_example_passes_image_and_maps_labels() -> None:
     captured: dict[str, Any] = {}
+    sentinel_image = object()
 
     class FakeProcessor:
-        def __call__(self, **kwargs: Any) -> dict[str, Any]:
+        def __call__(self, images: Any, **kwargs: Any) -> dict[str, Any]:
+            captured["images"] = images
             captured.update(kwargs)
-            return {"input_ids": [1, 2], "labels": [0, -100]}
+            return {"input_ids": [1, 2], "labels": [0, -100], "pixel_values": [0]}
 
     label2id = {"O": 0, "B-menu.nm": 1, "I-menu.nm": 2}
     words = ["Latte", "Grande"]
     boxes = [[100, 100, 300, 200], [350, 100, 600, 200]]
     labels = ["B-menu.nm", "I-menu.nm"]
-    out = encode_example(words, boxes, labels, FakeProcessor(), label2id)
+    out = encode_example(sentinel_image, words, boxes, labels, FakeProcessor(), label2id)
 
-    assert captured["boxes"] == boxes
+    assert captured["images"] is sentinel_image
     assert captured["text"] == words
-    assert captured["word_labels"] == [1, 2]  # mapped through label2id
+    assert captured["boxes"] == boxes
+    assert captured["word_labels"] == [1, 2]
     assert out["labels"] == [0, -100]
