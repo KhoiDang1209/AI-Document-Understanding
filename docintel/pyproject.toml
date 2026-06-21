@@ -46,7 +46,7 @@ train = [
     "Pillow>=10.3",
 ]
 kie = [
-    "mlflow>=2.12",
+    "mlflow>=2.16,<3",
     "boto3>=1.34",
 ]
 
