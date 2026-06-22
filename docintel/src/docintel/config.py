@@ -52,6 +52,7 @@ class Settings(BaseSettings):
     # KIE (Phase 2)
     kie_model_name: str = "microsoft/layoutlmv3-base"
     kie_registered_model_name: str = "cord-layoutlmv3"
+    kie_onnx_registered_model_name: str = "cord-layoutlmv3-onnx-int8"
 
 
 @lru_cache
