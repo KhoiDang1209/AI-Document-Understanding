@@ -1,19 +1,28 @@
 # Phases
 
-Per-phase working folders for the DocIntel [Build Roadmap](../plan.md). Each folder holds the phase **brief** (`phaseN.md`) and, once delivered, the completion **report** (`report_phaseN.md`).
+Per-phase working folders for the DocIntel [Build Roadmap](../plan.md). Each folder holds the phase **brief** (`phaseN.md` / `aN.md`) and, once delivered, the completion **report** (`report_*.md`).
+
+The roadmap is **core-first**: Phases 0–5 build the MLOps spine. The **Advancements** (A1–A5) begin only once the core is green.
+
+## Core — the MLOps spine
 
 | Phase | Title | Status |
 |-------|-------|--------|
 | [0](phase0/phase0.md) | Foundations & Environment | ✅ Complete — [report](phase0/report_phase0.md) |
-| [1](phase1/phase1.md) | OCR Baseline + `/extract` | Not started |
-| [2](phase2/phase2.md) | Layout Detection + Preprocessing | Not started |
-| [3](phase3/phase3.md) | KIE: Fine-tune LayoutLMv3 → ONNX INT8 | Not started |
-| [4](phase4/phase4.md) | Validation + Schema + Persistence | Not started |
-| [5](phase5/phase5.md) | Optimization + Benchmark Report | Not started |
-| [6](phase6/phase6.md) | RAG over Extracted Data + `/ask` | Not started |
-| [7](phase7/phase7.md) | Agent Orchestration (LangGraph) | Not started |
-| [8](phase8/phase8.md) | Observability & CI/CD | Not started |
-| [9](phase9/phase9.md) | Kubernetes (kind) & Packaging | Not started |
-| [10](phase10/phase10.md) | On-Demand LLM KIE Backend (optional) | Not started |
+| [1](phase1/phase1.md) | OCR Baseline + `/extract` | ✅ Complete — [report](phase1/report_phase1.md) |
+| [2](phase2/phase2.md) | KIE Fine-tune (LayoutLMv3) + MLflow | ✅ Complete — [report](phase2/report_phase2.md) |
+| [3](phase3/phase3.md) | Optimization: ONNX + INT8 + Benchmark | ✅ Complete — [report](phase3/report_phase3.md) · [benchmark](../benchmark.md) |
+| [4](phase4/phase4.md) | Serving + Validation + Schema + Persistence | **Next** |
+| [5](phase5/phase5.md) | Monitoring, Observability & CI/CD | Not started |
 
-Each `phaseN.md` mirrors the corresponding section of `plan.md` (goal, research, tasks, done-when) as a standalone working doc.
+## Advancements — after the core is green
+
+| Item | Title | Status |
+|------|-------|--------|
+| [A1](a1/a1.md) | Layout Detection | Not started |
+| [A2](a2/a2.md) | GraphRAG over Extracted Data + `/ask` | Not started |
+| [A3](a3/a3.md) | Agent Orchestration (LangGraph) + `/agent` | Not started |
+| [A4](a4/a4.md) | Kubernetes (kind) & Packaging | Not started |
+| [A5](a5/a5.md) | On-Demand LLM KIE Backend (optional) | Not started |
+
+Each brief mirrors the corresponding section of `plan.md` (goal, research, tasks, done-when) as a standalone working doc.

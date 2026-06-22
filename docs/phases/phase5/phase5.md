@@ -1,20 +1,21 @@
-# Phase 5 — Optimization + Benchmark Report
+# Phase 5 — Monitoring, Observability & CI/CD
 
 > Phase brief. Part of the [Build Roadmap](../../plan.md). Status: **Not started**.
 
-**Goal:** A rigorous engineering write-up comparing backends and configurations.
+**Goal:** Production hygiene — metrics, logs, dashboards, automated checks. Completes the core MLOps story.
 
 ## Research 🔬
-- [ ] Quantization variants; ONNX Runtime threading/session options on CPU.
-- [ ] Metric definitions: F1, CER/WER, p50/p95 latency, throughput, model size.
+- [ ] Prometheus metrics to expose (request count, latency histograms, error rate, KIE confidence).
+- [ ] Grafana dashboard layout; Loki log pipeline.
 
 ## Tasks
-- [ ] Benchmark harness: fixed sample set, warm-up, repeated runs.
-- [ ] Compare fp32 vs INT8; LayoutLMv3 vs optional LLM KIE.
-- [ ] `docs/benchmark.md` with tables + plots; log to MLflow.
+- [ ] Instrument FastAPI with the Prometheus client; `/metrics` endpoint.
+- [ ] Grafana dashboards + Loki log shipping in compose.
+- [ ] GitHub Actions: lint, test, build + push image.
 
 ## Done when 📦
-- [ ] Reproducible benchmark report covering accuracy / latency / size trade-offs.
+- [ ] Dashboards show live request/latency/error + model metrics; CI green on PRs.
+- [ ] **Core complete:** `docker compose up` runs the full pipeline — fine-tuned model pulled from the registry, served on CPU, monitored — reproducible from a clean checkout.
 
 ## Report
 On completion, add `report_phase5.md` to this folder.
