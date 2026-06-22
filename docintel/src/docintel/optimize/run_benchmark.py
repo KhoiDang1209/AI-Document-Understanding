@@ -88,8 +88,9 @@ def main() -> None:
         sys.stdout.reconfigure(encoding="utf-8")
 
     import mlflow
+    import numpy as np
+    import onnxruntime as ort
     import torch
-    from optimum.onnxruntime import ORTModelForTokenClassification
     from transformers import AutoModelForTokenClassification
 
     from docintel.config import get_settings
@@ -133,10 +134,6 @@ def main() -> None:
 
     torch_model = AutoModelForTokenClassification.from_pretrained(str(bundle_root / "model"))
     torch_model.eval()
-    ort_fp32 = ORTModelForTokenClassification.from_pretrained(str(onnx_fp32))
-    ort_int8 = ORTModelForTokenClassification.from_pretrained(
-        str(onnx_int8), file_name="model_quantized.onnx"
-    )
 
     def _torch_logits(sample: dict[str, Any]) -> Any:
         inputs = {k: torch.tensor([sample[k]]) for k in ("input_ids", "attention_mask", "bbox")}
@@ -144,18 +141,33 @@ def main() -> None:
         with torch.no_grad():
             return torch_model(**inputs).logits[0].numpy()
 
-    def _ort_logits_factory(ort_model: Any) -> Any:
+    def _onnx_logits_factory(session: Any) -> Any:
+        # The optimum ORTModel wrapper drops LayoutLMv3's bbox/pixel_values, so
+        # run the ONNX graph directly with every input it declares.
+        input_names = {i.name for i in session.get_inputs()}
+
         def _run(sample: dict[str, Any]) -> Any:
-            inputs = {k: torch.tensor([sample[k]]) for k in ("input_ids", "attention_mask", "bbox")}
-            inputs["pixel_values"] = torch.tensor([sample["pixel_values"]])
-            return ort_model(**inputs).logits[0].numpy()
+            feed = {
+                "input_ids": np.asarray([sample["input_ids"]], dtype=np.int64),
+                "attention_mask": np.asarray([sample["attention_mask"]], dtype=np.int64),
+                "bbox": np.asarray([sample["bbox"]], dtype=np.int64),
+                "pixel_values": np.asarray([sample["pixel_values"]], dtype=np.float32),
+            }
+            return session.run(None, {k: v for k, v in feed.items() if k in input_names})[0][0]
 
         return _run
 
+    sess_fp32 = ort.InferenceSession(
+        str(onnx_fp32 / "model.onnx"), providers=["CPUExecutionProvider"]
+    )
+    sess_int8 = ort.InferenceSession(
+        str(onnx_int8 / "model_quantized.onnx"), providers=["CPUExecutionProvider"]
+    )
+
     configs = [
         ("torch-fp32", _torch_logits, bundle_root / "model"),
-        ("onnx-fp32", _ort_logits_factory(ort_fp32), onnx_fp32),
-        ("onnx-int8", _ort_logits_factory(ort_int8), onnx_int8),
+        ("onnx-fp32", _onnx_logits_factory(sess_fp32), onnx_fp32),
+        ("onnx-int8", _onnx_logits_factory(sess_int8), onnx_int8),
     ]
 
     results: list[ConfigResult] = []
