@@ -58,10 +58,10 @@ def test_low_confidence_is_a_warning_not_an_error() -> None:
 def test_negative_and_unparsed_are_warnings() -> None:
     doc = _doc(
         line_items=[LineItem(name="a", price=600.0, confidence=0.9)],
-        subtotal=600.0,
         total=-5.0,
         unparsed_fields=["tax"],
     )
     report = validate(doc, Settings())
+    assert report.ok is True
     rules = {w.rule for w in report.warnings}
     assert "number_sanity" in rules
