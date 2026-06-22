@@ -93,8 +93,10 @@ class LayoutLMv3OnnxBackend:
             tracking_uri or settings.mlflow_tracking_uri,
         )
         onnx_path = next(Path(bundle).rglob("*quantized*.onnx"), None) or next(
-            Path(bundle).rglob("*.onnx")
+            Path(bundle).rglob("*.onnx"), None
         )
+        if onnx_path is None:
+            raise FileNotFoundError(f"No .onnx file found under bundle: {bundle}")
         config = json.loads((onnx_path.parent / "config.json").read_text(encoding="utf-8"))
         id2label = {int(k): v for k, v in config["id2label"].items()}
         session = ort.InferenceSession(str(onnx_path))
@@ -104,7 +106,9 @@ class LayoutLMv3OnnxBackend:
     def predict(self, ocr: OCRResult) -> list[WordPrediction]:
         """Run OCR words through the ONNX KIE graph and label each word."""
         words = [w.text for w in ocr.words]
-        boxes_pixel = [tuple(w.bbox) for w in ocr.words]
+        boxes_pixel: list[tuple[int, int, int, int]] = [
+            (w.bbox[0], w.bbox[1], w.bbox[2], w.bbox[3]) for w in ocr.words
+        ]
         if not words:
             return []
         boxes_1000 = [
@@ -130,7 +134,7 @@ class LayoutLMv3OnnxBackend:
             logits,
             word_ids,
             words,
-            boxes_pixel,  # type: ignore[arg-type]
+            boxes_pixel,
             self._id2label,
         )
 
