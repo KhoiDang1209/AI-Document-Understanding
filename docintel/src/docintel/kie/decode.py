@@ -96,8 +96,8 @@ def build_document(
         joined = " ".join(texts)
         value = parse_money(joined)
         scalars[field] = value
-        confs = scalar_conf[field]
-        field_confidence[field] = sum(confs) / len(confs)
+        scalar_confs = scalar_conf[field]
+        field_confidence[field] = sum(scalar_confs) / len(scalar_confs)
         if value is None and joined.strip():
             unparsed_fields.append(field)
 

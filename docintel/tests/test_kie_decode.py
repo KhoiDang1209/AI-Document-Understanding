@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from docintel.kie.decode import build_document
 from docintel.schema import WordPrediction
 
@@ -28,6 +30,8 @@ def test_groups_two_line_items_by_b_menu_nm() -> None:
     assert doc.subtotal == 8000.0
     assert doc.total == 8000.0
     assert doc.currency == "IDR"
+    assert doc.line_items[0].confidence == pytest.approx(0.9)
+    assert doc.field_confidence["subtotal"] == pytest.approx(0.9)
 
 
 def test_multiword_name_joins_and_outside_is_ignored() -> None:
