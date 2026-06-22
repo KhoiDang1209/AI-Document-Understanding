@@ -55,6 +55,8 @@ def measure_latency(
     """Time ``run_one`` over ``samples``: discard warmup, average ``repeats`` passes."""
     if not samples:
         raise ValueError("samples must be non-empty")
+    if repeats < 1:
+        raise ValueError("repeats must be >= 1")
     for i in range(warmup):
         run_one(samples[i % len(samples)])
     latencies_ms: list[float] = []

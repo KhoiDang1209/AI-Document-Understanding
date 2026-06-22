@@ -45,6 +45,11 @@ def test_measure_latency_rejects_empty_samples() -> None:
         measure_latency(lambda s: None, samples=[], warmup=1, repeats=1)
 
 
+def test_measure_latency_rejects_non_positive_repeats() -> None:
+    with pytest.raises(ValueError):
+        measure_latency(lambda s: None, samples=["a"], warmup=1, repeats=0)
+
+
 def test_dir_size_mb_sums_files(tmp_path: Path) -> None:
     (tmp_path / "a.bin").write_bytes(b"x" * (1024 * 1024))
     (tmp_path / "sub").mkdir()
