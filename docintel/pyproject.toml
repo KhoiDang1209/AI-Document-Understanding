@@ -59,6 +59,7 @@ optimize = [
 [project.scripts]
 docintel-download-data = "docintel.scripts.download_data:main"
 docintel-import-kie = "docintel.kie.import_run:main"
+docintel-benchmark-kie = "docintel.optimize.run_benchmark:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/docintel"]
