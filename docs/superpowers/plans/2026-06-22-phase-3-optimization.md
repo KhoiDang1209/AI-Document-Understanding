@@ -21,7 +21,7 @@
 - Minimal changes: touch only what the task needs; reuse `kie/dataset.py`, `kie/labels.py`, `kie/metrics.py` — do not duplicate parsing/metric logic.
 - Heavy libs (optimum, onnxruntime, transformers, datasets, matplotlib, mlflow) imported **inside functions**.
 - Every commit message ends with: `Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>`.
-- Environment: run `uv sync --extra dev --extra train --extra optimize` (the `dev` extra keeps pytest/ruff/mypy inside `.venv` rather than falling through to the Anaconda base — a known repo gotcha). Verify with `uv run python -c "import shutil; print(shutil.which('pytest'))"` pointing inside `.venv`.
+- Environment: run `uv sync --extra dev --extra train --extra optimize --extra kie` (the `kie` extra provides `mlflow`, which `run_benchmark` and `export` import and which `test_kie_import` needs at collection time; `dev` keeps pytest/ruff/mypy inside `.venv` rather than falling through to the Anaconda base — a known repo gotcha). Verify with `uv run python -c "import shutil; print(shutil.which('pytest'))"` pointing inside `.venv`.
 
 ## File Structure
 
@@ -1138,6 +1138,7 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 
 The unit tests cover the pure logic; the actual benchmark is the deliverable and is run by the controller on the laptop (analogous to Phase 2's Colab run). Steps:
 
+0. Ensure the env has all extras: `uv sync --extra dev --extra train --extra optimize --extra kie`.
 1. Ensure services: `docker compose up -d mlflow minio` (from `docintel/`).
 2. Run end-to-end (override tracking URI for the host; a small sample first to smoke it):
    ```bash
