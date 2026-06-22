@@ -54,6 +54,15 @@ class Settings(BaseSettings):
     kie_registered_model_name: str = "cord-layoutlmv3"
     kie_onnx_registered_model_name: str = "cord-layoutlmv3-onnx-int8"
 
+    # Serving + persistence (Phase 4)
+    kie_onnx_model_version: str = "1"
+    sqlite_path: str = "data/docintel.db"
+    minio_bucket: str = "documents"
+    minio_secure: bool = False
+    validation_tolerance: float = 1.0
+    confidence_threshold: float = 0.5
+    default_currency: str = "IDR"
+
 
 @lru_cache
 def get_settings() -> Settings:

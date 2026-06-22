@@ -55,6 +55,10 @@ optimize = [
     "matplotlib>=3.8",
     "transformers>=4.40,<5",
 ]
+serve = [
+    "onnxruntime>=1.16",
+    "transformers>=4.40,<5",
+]
 
 [project.scripts]
 docintel-download-data = "docintel.scripts.download_data:main"
@@ -86,7 +90,7 @@ explicit_package_bases = true
 namespace_packages = true
 
 [[tool.mypy.overrides]]
-module = ["datasets.*", "huggingface_hub.*", "cv2.*", "doctr.*", "PIL.*", "seqeval.*", "mlflow.*", "optimum.*", "onnx.*", "onnxruntime.*", "matplotlib.*"]
+module = ["datasets.*", "huggingface_hub.*", "cv2.*", "doctr.*", "PIL.*", "seqeval.*", "mlflow.*", "optimum.*", "onnx.*", "onnxruntime.*", "matplotlib.*", "boto3.*", "botocore.*", "transformers.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
