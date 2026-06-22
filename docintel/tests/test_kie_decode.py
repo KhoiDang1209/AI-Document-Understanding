@@ -1,0 +1,53 @@
+"""Tests for decoding word predictions into a Document."""
+
+from __future__ import annotations
+
+from docintel.kie.decode import build_document
+from docintel.schema import WordPrediction
+
+
+def _w(text: str, label: str, conf: float = 0.9) -> WordPrediction:
+    return WordPrediction(text=text, box=(0, 0, 1, 1), label=label, confidence=conf)
+
+
+def test_groups_two_line_items_by_b_menu_nm() -> None:
+    preds = [
+        _w("Coke", "B-menu.nm"),
+        _w("2", "B-menu.cnt"),
+        _w("3.000", "B-menu.price"),
+        _w("Rice", "B-menu.nm"),
+        _w("1", "B-menu.cnt"),
+        _w("5.000", "B-menu.price"),
+        _w("8.000", "B-sub_total.subtotal_price"),
+        _w("8.000", "B-total.total_price"),
+    ]
+    doc = build_document(preds, default_currency="IDR")
+    assert [i.name for i in doc.line_items] == ["Coke", "Rice"]
+    assert doc.line_items[0].qty == 2.0
+    assert doc.line_items[0].price == 3000.0
+    assert doc.subtotal == 8000.0
+    assert doc.total == 8000.0
+    assert doc.currency == "IDR"
+
+
+def test_multiword_name_joins_and_outside_is_ignored() -> None:
+    preds = [
+        _w("Fried", "B-menu.nm"),
+        _w("Rice", "I-menu.nm"),
+        _w("--", "O"),
+        _w("5.000", "B-menu.price"),
+    ]
+    doc = build_document(preds, default_currency="IDR")
+    assert doc.line_items[0].name == "Fried Rice"
+    assert doc.line_items[0].price == 5000.0
+
+
+def test_unparseable_total_recorded() -> None:
+    preds = [
+        _w("Coke", "B-menu.nm"),
+        _w("3.000", "B-menu.price"),
+        _w("oops", "B-total.total_price"),
+    ]
+    doc = build_document(preds, default_currency="IDR")
+    assert doc.total is None
+    assert "total" in doc.unparsed_fields
