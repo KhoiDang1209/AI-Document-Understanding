@@ -38,7 +38,17 @@
 | `src/docintel/config.py` | (modify) add `kie_onnx_registered_model_name`. |
 | `pyproject.toml` | (modify) add `optimize` extra, mypy overrides, script entry. |
 
-## Controller Pre-Flight (before Task 1 — de-risk the toolchain)
+## Controller Pre-Flight (before Task 1 — de-risk the toolchain) — ✅ DONE
+
+**Result (2026-06-22):** The risk was real. Installing Optimum 2.1.0 forces transformers down
+to 4.57.6 (`optimum` requires `transformers<5`). With `transformers>=4.40,<5` pinned in the
+`optimize` extra, both the export and the dynamic-INT8 quantize succeed:
+- `ORTModelForTokenClassification.from_pretrained('microsoft/layoutlmv3-base', export=True)` → `model.onnx`.
+- `ORTQuantizer` + `AutoQuantizationConfig.avx512_vnni(is_static=False, per_channel=False)` → `model_quantized.onnx`.
+Resolved versions: optimum 2.1.0, onnxruntime 1.27.0, onnx 1.22.0, transformers 4.57.6.
+Task 1's extra includes the pin; no fallback to Approach B is needed.
+
+---
 
 The spec's key risk is **Optimum × transformers 5.x × LayoutLMv3 export**. Before dispatching Task 1, the controller runs a real smoke-export to confirm the stack works:
 
@@ -79,8 +89,13 @@ optimize = [
     "optimum[onnxruntime]>=1.20",
     "onnx>=1.16",
     "matplotlib>=3.8",
+    "transformers>=4.40,<5",
 ]
 ```
+The `transformers>=4.40,<5` pin is **required**: Optimum (2.1.0) is incompatible with
+transformers 5.x and will not export otherwise — confirmed by the controller pre-flight.
+Training runs on Colab (transformers 5.x); optimization runs on the laptop (4.x); they are
+separate environments, so this pin does not affect Phase 2.
 Extend the existing mypy overrides `module` list (currently ends `"seqeval.*", "mlflow.*"`) to also include `"optimum.*", "onnx.*", "onnxruntime.*", "matplotlib.*"`:
 ```toml
 module = ["datasets.*", "huggingface_hub.*", "cv2.*", "doctr.*", "PIL.*", "seqeval.*", "mlflow.*", "optimum.*", "onnx.*", "onnxruntime.*", "matplotlib.*"]
