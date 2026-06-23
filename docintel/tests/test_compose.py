@@ -8,9 +8,17 @@ import yaml
 
 COMPOSE_FILE = Path(__file__).resolve().parent.parent / "docker-compose.yml"
 
-# Core = MLOps spine only. Qdrant (GraphRAG) and Prometheus/Grafana/Loki
-# (observability) are deliberately out of the Phase 0 core stack.
-EXPECTED_SERVICES = {"api", "mlflow", "minio"}
+# Core MLOps spine plus the Phase 5 observability stack. Qdrant (GraphRAG)
+# remains out of scope until the advancements.
+EXPECTED_SERVICES = {
+    "api",
+    "mlflow",
+    "minio",
+    "prometheus",
+    "loki",
+    "promtail",
+    "grafana",
+}
 
 
 def test_core_services() -> None:
