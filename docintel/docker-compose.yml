@@ -15,6 +15,18 @@ services:
       - mlflow
       - minio
 
+  ui:
+    build:
+      context: .
+      dockerfile: Dockerfile.ui
+    container_name: docintel-ui
+    ports:
+      - "8501:8501"
+    environment:
+      DOCINTEL_UI_API_BASE_URL: http://api:8000
+    depends_on:
+      - api
+
   mlflow:
     image: ghcr.io/mlflow/mlflow:v2.16.2
     container_name: docintel-mlflow

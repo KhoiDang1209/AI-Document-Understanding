@@ -60,6 +60,10 @@ serve = [
     "transformers>=4.40,<5",
     "prometheus-fastapi-instrumentator>=7.0",
 ]
+ui = [
+    "streamlit>=1.37",
+    "httpx>=0.27",
+]
 
 [project.scripts]
 docintel-download-data = "docintel.scripts.download_data:main"

@@ -67,6 +67,10 @@ class Settings(BaseSettings):
     confidence_threshold: float = 0.5
     default_currency: str = "IDR"
 
+    # Streamlit UI (Phase 6)
+    ui_api_base_url: str = "http://localhost:8000"
+    ui_request_timeout_s: float = 120.0
+
 
 @lru_cache
 def get_settings() -> Settings:
