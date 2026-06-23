@@ -58,6 +58,10 @@ logs/
 .DS_Store
 Thumbs.db
 
+# Local agent tooling / scratch (not part of the repo)
+.claude/
+.superpowers/
+
 # DVC: track pointer files and keep-files, not the raw data they point to
 !docintel/data/
 docintel/data/**
