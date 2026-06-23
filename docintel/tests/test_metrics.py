@@ -54,3 +54,24 @@ def test_metrics_endpoint_exposes_custom_and_http_metrics() -> None:
     assert "docintel_kie_field_confidence" in body
     # Instrumentator default HTTP metric.
     assert "http_request_duration_seconds" in body
+
+
+from typing import Any  # noqa: E402
+
+from tests.test_extract import _make_stubbed_app, _png_bytes  # noqa: E402
+
+
+def test_extract_records_validation_metric(tmp_path: Any) -> None:
+    from docintel.config import Settings
+
+    app = _make_stubbed_app(Settings(sqlite_path=str(tmp_path / "db.sqlite")))
+    with TestClient(app) as client:
+        assert (
+            client.post(
+                "/extract", files={"file": ("r.png", _png_bytes(), "image/png")}
+            ).status_code
+            == 200
+        )
+        body = client.get("/metrics").text
+    app.dependency_overrides.clear()
+    assert "docintel_validation_total{outcome=" in body

@@ -12,6 +12,7 @@ import cv2
 import numpy as np
 from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, status
 
+from docintel.api.metrics import Metrics, record_extraction
 from docintel.config import Settings, get_settings
 from docintel.kie.backend import KIEBackend, LayoutLMv3OnnxBackend
 from docintel.kie.decode import build_document
@@ -55,6 +56,12 @@ def get_s3_client(request: Request) -> Any:
     return client
 
 
+def get_metrics(request: Request) -> Metrics:
+    """Return the per-app metrics set built in create_app."""
+    metrics: Metrics = request.app.state.metrics
+    return metrics
+
+
 @router.post("/extract", response_model=Document, summary="Extract structured fields from an image")
 async def extract(
     file: UploadFile,
@@ -62,6 +69,7 @@ async def extract(
     engine: OCREngine = Depends(get_ocr_engine),  # noqa: B008
     backend: KIEBackend = Depends(get_kie_backend),  # noqa: B008
     s3: Any = Depends(get_s3_client),  # noqa: B008
+    metrics: Metrics = Depends(get_metrics),  # noqa: B008
 ) -> Document:
     """Run the full pipeline, persist the result, and return a validated Document."""
     if file.content_type not in _ACCEPTED_TYPES:
@@ -114,4 +122,5 @@ async def extract(
             "validation_ok": document.validation.ok,
         },
     )
+    record_extraction(metrics, document)
     return document
