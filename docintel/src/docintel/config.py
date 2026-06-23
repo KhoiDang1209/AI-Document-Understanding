@@ -56,6 +56,10 @@ class Settings(BaseSettings):
 
     # Serving + persistence (Phase 4)
     kie_onnx_model_version: str = "1"
+    kie_onnx_local_path: str | None = Field(
+        default=None,
+        description="Local ONNX bundle dir; if set, load it instead of the MLflow registry.",
+    )
     sqlite_path: str = "data/docintel.db"
     minio_bucket: str = "documents"
     minio_secure: bool = False

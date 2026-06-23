@@ -11,7 +11,7 @@ config. Heavy libraries are imported inside functions.
 from __future__ import annotations
 
 import json
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
 from typing import Any, Protocol
 
@@ -57,6 +57,23 @@ def words_from_token_logits(
     return predictions
 
 
+def resolve_onnx_bundle(
+    settings: Settings,
+    download: Callable[[str, str, Path, str | None], Path],
+    tracking_uri: str | None = None,
+) -> Path:
+    """Return the ONNX bundle dir: the local override if set, else the MLflow download."""
+    if settings.kie_onnx_local_path:
+        return Path(settings.kie_onnx_local_path)
+    dest = Path(settings.data_dir) / "models" / settings.kie_onnx_registered_model_name
+    return download(
+        settings.kie_onnx_registered_model_name,
+        settings.kie_onnx_model_version,
+        dest,
+        tracking_uri or settings.mlflow_tracking_uri,
+    )
+
+
 class KIEBackend(Protocol):
     """Maps an OCR result + page image to per-word BIO predictions."""
 
@@ -77,19 +94,13 @@ class LayoutLMv3OnnxBackend:
         settings: Settings,
         tracking_uri: str | None = None,
     ) -> LayoutLMv3OnnxBackend:
-        """Pull the INT8 model from MLflow and build a ready-to-serve backend."""
+        """Load the INT8 model (local override or MLflow) and build a ready-to-serve backend."""
         import onnxruntime as ort
         from transformers import LayoutLMv3Processor
 
         from docintel.optimize.export import download_registered_model
 
-        dest = Path(settings.data_dir) / "models" / settings.kie_onnx_registered_model_name
-        bundle = download_registered_model(
-            settings.kie_onnx_registered_model_name,
-            settings.kie_onnx_model_version,
-            dest,
-            tracking_uri or settings.mlflow_tracking_uri,
-        )
+        bundle = resolve_onnx_bundle(settings, download_registered_model, tracking_uri)
         onnx_path = next(Path(bundle).rglob("*quantized*.onnx"), None) or next(
             Path(bundle).rglob("*.onnx"), None
         )

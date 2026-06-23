@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import numpy as np
 
-from docintel.kie.backend import words_from_token_logits
+from docintel.config import Settings
+from docintel.kie.backend import resolve_onnx_bundle, words_from_token_logits
 
 
 def test_first_subword_token_drives_word_label() -> None:
@@ -27,3 +30,26 @@ def test_first_subword_token_drives_word_label() -> None:
     assert [p.label for p in preds] == ["B-menu.nm", "O"]
     assert preds[0].text == "Coke"
     assert 0.99 < preds[0].confidence <= 1.0
+
+
+def _no_download(*_: object) -> Path:
+    raise AssertionError("MLflow download must not be called when local path is set")
+
+
+def test_resolve_onnx_bundle_prefers_local_path() -> None:
+    settings = Settings(kie_onnx_local_path="models/cord-layoutlmv3-onnx-int8")
+    assert resolve_onnx_bundle(settings, _no_download) == Path("models/cord-layoutlmv3-onnx-int8")
+
+
+def test_resolve_onnx_bundle_falls_back_to_mlflow() -> None:
+    settings = Settings(kie_onnx_local_path=None)
+    seen: dict[str, object] = {}
+
+    def fake_download(name: str, version: str, dest: Path, uri: str | None) -> Path:
+        seen.update(name=name, version=version, dest=dest, uri=uri)
+        return dest
+
+    result = resolve_onnx_bundle(settings, fake_download)
+    assert seen["name"] == settings.kie_onnx_registered_model_name
+    assert seen["version"] == settings.kie_onnx_model_version
+    assert result == Path(settings.data_dir) / "models" / settings.kie_onnx_registered_model_name
