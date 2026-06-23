@@ -13,7 +13,7 @@ The roadmap is **core-first**: Phases 0–5 build the MLOps spine. The **Advance
 | [2](phase2/phase2.md) | KIE Fine-tune (LayoutLMv3) + MLflow | ✅ Complete — [report](phase2/report_phase2.md) |
 | [3](phase3/phase3.md) | Optimization: ONNX + INT8 + Benchmark | ✅ Complete — [report](phase3/report_phase3.md) · [benchmark](../benchmark.md) |
 | [4](phase4/phase4.md) | Serving + Validation + Schema + Persistence | ✅ Complete — [report](phase4/report_phase4.md) |
-| [5](phase5/phase5.md) | Monitoring, Observability & CI/CD | **Next** |
+| [5](phase5/phase5.md) | Monitoring, Observability & CI/CD | 🟡 Metrics + dashboards complete — [report](phase5/report_phase5.md); CI image build/push deferred |
 
 ## Advancements — after the core is green
 
