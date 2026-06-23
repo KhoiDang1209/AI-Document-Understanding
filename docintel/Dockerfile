@@ -19,9 +19,10 @@ RUN apt-get update \
 COPY pyproject.toml README.md ./
 COPY src ./src
 # Pin a CPU-only torch/torchvision (PyPI's default Linux wheel is CUDA — huge),
-# then install the project against the already-satisfied CPU build.
+# then install the project with the runtime extras the serving path needs:
+# serve (onnxruntime, transformers, prometheus instrumentator) and kie (mlflow, boto3).
 RUN pip install --index-url https://download.pytorch.org/whl/cpu torch torchvision \
-    && pip install .
+    && pip install ".[serve,kie]"
 # Bake docTR weights into the image so the running container needs no network.
 RUN python -c "from doctr.models import ocr_predictor; ocr_predictor(pretrained=True)"
 
