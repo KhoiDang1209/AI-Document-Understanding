@@ -9,7 +9,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from docintel import __version__
-from docintel.api.routes import extract, health
+from docintel.api.routes import documents, extract, health
 from docintel.config import get_settings
 from docintel.logging_config import configure_logging
 
@@ -22,6 +22,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     settings = get_settings()
     configure_logging(settings.log_level)
     app.state.ocr_engine = None
+    app.state.kie_backend = None
+    app.state.s3_client = None
     logger.info(
         "service.startup",
         extra={"environment": settings.environment, "version": __version__},
@@ -41,6 +43,7 @@ def create_app() -> FastAPI:
     )
     app.include_router(health.router)
     app.include_router(extract.router)
+    app.include_router(documents.router)
     return app
 
 

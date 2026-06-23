@@ -12,17 +12,17 @@ class _FakeS3:
         self.store: dict[tuple[str, str], bytes] = {}
         self.buckets: set[str] = set()
 
-    def head_bucket(self, Bucket: str) -> None:  # noqa: N803
+    def head_bucket(self, Bucket: str) -> None:
         if Bucket not in self.buckets:
             raise RuntimeError("missing")
 
-    def create_bucket(self, Bucket: str) -> None:  # noqa: N803
+    def create_bucket(self, Bucket: str) -> None:
         self.buckets.add(Bucket)
 
-    def put_object(self, Bucket: str, Key: str, Body: bytes, ContentType: str) -> None:  # noqa: N803
+    def put_object(self, Bucket: str, Key: str, Body: bytes, ContentType: str) -> None:
         self.store[(Bucket, Key)] = Body
 
-    def get_object(self, Bucket: str, Key: str) -> dict[str, Any]:  # noqa: N803
+    def get_object(self, Bucket: str, Key: str) -> dict[str, Any]:
         if (Bucket, Key) not in self.store:
             from botocore.exceptions import ClientError
 

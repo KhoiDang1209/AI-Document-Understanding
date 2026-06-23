@@ -60,9 +60,9 @@ def words_from_token_logits(
 
 
 class KIEBackend(Protocol):
-    """Maps an OCR result to per-word BIO predictions."""
+    """Maps an OCR result + page image to per-word BIO predictions."""
 
-    def predict(self, ocr: OCRResult) -> list[WordPrediction]: ...
+    def predict(self, ocr: OCRResult, image: Any) -> list[WordPrediction]: ...
 
 
 class LayoutLMv3OnnxBackend:
@@ -103,7 +103,7 @@ class LayoutLMv3OnnxBackend:
         processor = LayoutLMv3Processor.from_pretrained(settings.kie_model_name, apply_ocr=False)
         return cls(session, processor, id2label)
 
-    def predict(self, ocr: OCRResult) -> list[WordPrediction]:
+    def predict(self, ocr: OCRResult, image: Any) -> list[WordPrediction]:
         """Run OCR words through the ONNX KIE graph and label each word."""
         words = [w.text for w in ocr.words]
         boxes_pixel: list[tuple[int, int, int, int]] = [
@@ -115,7 +115,7 @@ class LayoutLMv3OnnxBackend:
             normalize_box(list(box), ocr.image_width, ocr.image_height) for box in boxes_pixel
         ]
         encoding = self._processor(
-            ocr_image_placeholder(ocr),
+            image,
             text=words,
             boxes=boxes_1000,
             truncation=True,
@@ -137,15 +137,3 @@ class LayoutLMv3OnnxBackend:
             boxes_pixel,
             self._id2label,
         )
-
-
-def ocr_image_placeholder(ocr: OCRResult) -> Any:
-    """Build a white RGB PIL image of the OCR's dimensions for the processor.
-
-    The KIE model attends to ``pixel_values``; serving feeds the page geometry
-    via boxes and a blank canvas of the correct size (the real pixels are not
-    re-decoded here — the API passes the decoded image in Task 6).
-    """
-    from PIL import Image
-
-    return Image.new("RGB", (ocr.image_width, ocr.image_height), "white")

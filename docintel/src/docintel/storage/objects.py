@@ -24,7 +24,7 @@ def ensure_bucket(client: Any, bucket: str) -> None:
     """Create ``bucket`` if it does not already exist."""
     try:
         client.head_bucket(Bucket=bucket)
-    except Exception:  # noqa: BLE001 — head raises for missing/forbidden; create is the recovery
+    except Exception:  # head raises for missing/forbidden; create is the recovery
         client.create_bucket(Bucket=bucket)
 
 
