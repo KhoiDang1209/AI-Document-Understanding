@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import Response
 
 from docintel.api.routes.extract import get_s3_client
@@ -37,7 +37,6 @@ def read_document(
 @router.get("/documents/{document_id}/image", summary="Retrieve a document's source image")
 def read_document_image(
     document_id: str,
-    request: Request,
     settings: Settings = Depends(get_settings),  # noqa: B008
     s3: Any = Depends(get_s3_client),  # noqa: B008
 ) -> Response:

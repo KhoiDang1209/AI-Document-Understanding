@@ -22,8 +22,6 @@ from docintel.kie.dataset import normalize_box
 from docintel.pipeline.types import OCRResult
 from docintel.schema import WordPrediction
 
-_ONNX_INPUTS = ("input_ids", "attention_mask", "bbox", "pixel_values")
-
 
 def _softmax_max(row: Any) -> tuple[int, float]:
     exp = np.exp(row - np.max(row))

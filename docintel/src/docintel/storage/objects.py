@@ -21,11 +21,23 @@ def make_s3_client(settings: Settings) -> Any:
 
 
 def ensure_bucket(client: Any, bucket: str) -> None:
-    """Create ``bucket`` if it does not already exist."""
+    """Create ``bucket`` if it does not already exist.
+
+    ``head_bucket`` raises ``ClientError`` with a 404/NoSuchBucket code when the
+    bucket is absent; only that case is recovered by creating it. Other errors
+    (forbidden, endpoint unreachable, bad credentials) propagate so the real
+    cause surfaces instead of a confusing follow-on ``create_bucket`` failure.
+    """
+    from botocore.exceptions import ClientError
+
     try:
         client.head_bucket(Bucket=bucket)
-    except Exception:  # head raises for missing/forbidden; create is the recovery
-        client.create_bucket(Bucket=bucket)
+    except ClientError as exc:
+        code = exc.response.get("Error", {}).get("Code")
+        if code in {"404", "NoSuchBucket", "NotFound"}:
+            client.create_bucket(Bucket=bucket)
+        else:
+            raise
 
 
 def put_image(client: Any, bucket: str, key: str, data: bytes, content_type: str) -> None:

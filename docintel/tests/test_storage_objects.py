@@ -14,7 +14,9 @@ class _FakeS3:
 
     def head_bucket(self, Bucket: str) -> None:
         if Bucket not in self.buckets:
-            raise RuntimeError("missing")
+            from botocore.exceptions import ClientError
+
+            raise ClientError({"Error": {"Code": "404"}}, "HeadBucket")
 
     def create_bucket(self, Bucket: str) -> None:
         self.buckets.add(Bucket)
@@ -62,3 +64,17 @@ def test_ensure_bucket_noop_when_exists() -> None:
     client.buckets.add("documents")
     ensure_bucket(client, "documents")
     assert client.buckets == {"documents"}
+
+
+def test_ensure_bucket_reraises_on_non_404() -> None:
+    import pytest
+    from botocore.exceptions import ClientError
+
+    class _ForbiddenS3(_FakeS3):
+        def head_bucket(self, Bucket: str) -> None:
+            raise ClientError({"Error": {"Code": "403"}}, "HeadBucket")
+
+    client = _ForbiddenS3()
+    with pytest.raises(ClientError):
+        ensure_bucket(client, "documents")
+    assert client.buckets == set()
