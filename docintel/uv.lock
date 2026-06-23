@@ -938,6 +938,10 @@ optimize = [
     { name = "optimum", extra = ["onnxruntime"] },
     { name = "transformers" },
 ]
+serve = [
+    { name = "onnxruntime" },
+    { name = "transformers" },
+]
 train = [
     { name = "accelerate" },
     { name = "datasets" },
@@ -961,6 +965,7 @@ requires-dist = [
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.10" },
     { name = "numpy", specifier = ">=1.26" },
     { name = "onnx", marker = "extra == 'optimize'", specifier = ">=1.16" },
+    { name = "onnxruntime", marker = "extra == 'serve'", specifier = ">=1.16" },
     { name = "opencv-python-headless", specifier = ">=4.9" },
     { name = "optimum", extras = ["onnxruntime"], marker = "extra == 'optimize'", specifier = ">=1.20" },
     { name = "pillow", specifier = ">=10.3" },
@@ -976,10 +981,11 @@ requires-dist = [
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.5" },
     { name = "seqeval", marker = "extra == 'train'", specifier = ">=1.2" },
     { name = "transformers", marker = "extra == 'optimize'", specifier = ">=4.40,<5" },
+    { name = "transformers", marker = "extra == 'serve'", specifier = ">=4.40,<5" },
     { name = "transformers", marker = "extra == 'train'", specifier = ">=4.40" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.30" },
 ]
-provides-extras = ["dev", "data", "train", "kie", "optimize"]
+provides-extras = ["dev", "data", "train", "kie", "optimize", "serve"]
 
 [[package]]
 name = "docker"

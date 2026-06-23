@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import sqlite3
+from collections.abc import Iterator
+from contextlib import contextmanager
 from pathlib import Path
 
 from docintel.schema import Document
@@ -17,9 +19,16 @@ CREATE TABLE IF NOT EXISTS documents (
 """
 
 
-def _connect(path: str) -> sqlite3.Connection:
+@contextmanager
+def _connect(path: str) -> Iterator[sqlite3.Connection]:
+    """Open a sqlite connection that commits on success and always closes."""
     Path(path).parent.mkdir(parents=True, exist_ok=True)
-    return sqlite3.connect(path)
+    conn = sqlite3.connect(path)
+    try:
+        with conn:
+            yield conn
+    finally:
+        conn.close()
 
 
 def init_db(path: str) -> None:

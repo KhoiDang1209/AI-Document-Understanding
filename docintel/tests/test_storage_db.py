@@ -35,3 +35,14 @@ def test_get_unknown_returns_none(tmp_path: Path) -> None:
     db = str(tmp_path / "docintel.db")
     init_db(db)
     assert get_document(db, "missing") is None
+
+
+def test_upsert_updates_existing(tmp_path: Path) -> None:
+    db = str(tmp_path / "docintel.db")
+    init_db(db)
+    save_document(db, _doc(), image_key="v1.png")
+    save_document(db, _doc(), image_key="v2.png")
+    fetched = get_document(db, "doc1")
+    assert fetched is not None
+    _, image_key = fetched
+    assert image_key == "v2.png"

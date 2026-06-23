@@ -55,3 +55,10 @@ def test_get_missing_returns_none() -> None:
     client = _FakeS3()
     ensure_bucket(client, "documents")
     assert get_image(client, "documents", "nope.png") is None
+
+
+def test_ensure_bucket_noop_when_exists() -> None:
+    client = _FakeS3()
+    client.buckets.add("documents")
+    ensure_bucket(client, "documents")
+    assert client.buckets == {"documents"}
