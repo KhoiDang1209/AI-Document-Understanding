@@ -7,8 +7,11 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from prometheus_client import CollectorRegistry
+from prometheus_fastapi_instrumentator import Instrumentator
 
 from docintel import __version__
+from docintel.api.metrics import build_metrics
 from docintel.api.routes import documents, extract, health
 from docintel.config import get_settings
 from docintel.logging_config import configure_logging
@@ -41,6 +44,9 @@ def create_app() -> FastAPI:
         summary="Document AI: images to validated, queryable structured data.",
         lifespan=lifespan,
     )
+    registry = CollectorRegistry()
+    app.state.metrics = build_metrics(registry)
+    Instrumentator(registry=registry).instrument(app).expose(app)
     app.include_router(health.router)
     app.include_router(extract.router)
     app.include_router(documents.router)
