@@ -11,6 +11,11 @@ services:
     environment:
       DOCINTEL_MLFLOW_TRACKING_URI: http://mlflow:5000
       DOCINTEL_MINIO_ENDPOINT: minio:9000
+      # Serve the KIE model from the locally-mounted bundle instead of the
+      # MLflow registry (survives a wiped mlflow-data volume; no re-registration).
+      DOCINTEL_KIE_ONNX_LOCAL_PATH: /models/cord-layoutlmv3-onnx-int8
+    volumes:
+      - ../models/cord-layoutlmv3-onnx-int8:/models/cord-layoutlmv3-onnx-int8:ro
     depends_on:
       - mlflow
       - minio
