@@ -46,6 +46,32 @@ def test_multiword_name_joins_and_outside_is_ignored() -> None:
     assert doc.line_items[0].price == 5000.0
 
 
+def test_two_scalar_spans_pick_highest_confidence_not_concatenated() -> None:
+    # The model tagged two separate numbers as subtotal; the real one (503.000)
+    # has higher confidence than the spurious one (52.815). They must not be
+    # glued into 50300052815 — the highest-confidence span wins.
+    preds = [
+        _w("Coke", "B-menu.nm"),
+        _w("503.000", "B-sub_total.subtotal_price", conf=0.95),
+        _w("52.815", "B-sub_total.subtotal_price", conf=0.40),
+    ]
+    doc = build_document(preds, default_currency="IDR")
+    assert doc.subtotal == 503000.0
+    assert doc.field_confidence["subtotal"] == pytest.approx(0.95)
+
+
+def test_scalar_span_joins_continuation_tokens() -> None:
+    # A single value split across B-/I- (e.g. OCR breaking 1.591.600 apart) is
+    # one span and must still be joined into a single number.
+    preds = [
+        _w("Coke", "B-menu.nm"),
+        _w("1.591", "B-total.total_price"),
+        _w("600", "I-total.total_price"),
+    ]
+    doc = build_document(preds, default_currency="IDR")
+    assert doc.total == 1591600.0
+
+
 def test_unparseable_total_recorded() -> None:
     preds = [
         _w("Coke", "B-menu.nm"),

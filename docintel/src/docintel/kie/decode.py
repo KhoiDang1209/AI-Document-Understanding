@@ -8,8 +8,21 @@ scalar fields. Money strings are parsed with ``schema.parse_money``.
 from __future__ import annotations
 
 from collections.abc import Sequence
+from dataclasses import dataclass, field
 
 from docintel.schema import Document, LineItem, WordPrediction, detect_currency, parse_money
+
+
+@dataclass
+class _ScalarSpan:
+    """One contiguous BIO span of words tagged for a single scalar field."""
+
+    texts: list[str] = field(default_factory=list)
+    confs: list[float] = field(default_factory=list)
+
+    @property
+    def mean_conf(self) -> float:
+        return sum(self.confs) / len(self.confs) if self.confs else 0.0
 
 _LINE_FIELDS = {
     "menu.nm": "name",
@@ -34,12 +47,16 @@ def _category(label: str) -> str | None:
 
 def _collect_spans(
     predictions: Sequence[WordPrediction],
-) -> tuple[list[dict[str, object]], dict[str, list[str]], dict[str, list[float]], list[str]]:
-    """Group words into line-item rows and scalar text buckets (raw, unparsed)."""
+) -> tuple[list[dict[str, object]], dict[str, list[_ScalarSpan]], list[str]]:
+    """Group words into line-item rows and per-scalar-field BIO spans.
+
+    Each ``B-`` starts a new scalar span; ``I-`` continuations extend the field's
+    most recent span. Keeping spans separate (instead of concatenating all tokens)
+    prevents two distinct numbers mislabelled as the same field from being glued.
+    """
     items: list[dict[str, object]] = []
     current: dict[str, object] | None = None
-    scalar_text: dict[str, list[str]] = {}
-    scalar_conf: dict[str, list[float]] = {}
+    scalar_spans: dict[str, list[_ScalarSpan]] = {}
     all_texts: list[str] = []
 
     for pred in predictions:
@@ -54,15 +71,31 @@ def _collect_spans(
             if current is None:
                 current = {"_words": {}, "_conf": []}
                 items.append(current)
-            field = _LINE_FIELDS[category]
+            field_name = _LINE_FIELDS[category]
             words = current["_words"]
-            words.setdefault(field, []).append(pred.text)  # type: ignore[attr-defined]
+            words.setdefault(field_name, []).append(pred.text)  # type: ignore[attr-defined]
             current["_conf"].append(pred.confidence)  # type: ignore[attr-defined]
         elif category in _SCALAR_FIELDS:
-            field = _SCALAR_FIELDS[category]
-            scalar_text.setdefault(field, []).append(pred.text)
-            scalar_conf.setdefault(field, []).append(pred.confidence)
-    return items, scalar_text, scalar_conf, all_texts
+            field_name = _SCALAR_FIELDS[category]
+            spans = scalar_spans.setdefault(field_name, [])
+            if pred.label.startswith("B-") or not spans:
+                spans.append(_ScalarSpan())
+            spans[-1].texts.append(pred.text)
+            spans[-1].confs.append(pred.confidence)
+    return items, scalar_spans, all_texts
+
+
+def _select_scalar_span(spans: list[_ScalarSpan]) -> _ScalarSpan | None:
+    """Choose one span for a scalar field: highest-confidence parseable span.
+
+    Falls back to the highest-confidence span overall when none parse as money,
+    so the unparsed-field warning and its confidence are still recorded.
+    """
+    if not spans:
+        return None
+    parseable = [s for s in spans if parse_money(" ".join(s.texts)) is not None]
+    candidates = parseable or spans
+    return max(candidates, key=lambda s: s.mean_conf)
 
 
 def build_document(
@@ -70,7 +103,7 @@ def build_document(
     default_currency: str,
 ) -> Document:
     """Assemble a Document from word predictions (id/validation set by caller)."""
-    items, scalar_text, scalar_conf, all_texts = _collect_spans(predictions)
+    items, scalar_spans, all_texts = _collect_spans(predictions)
 
     line_items: list[LineItem] = []
     for raw in items:
@@ -92,14 +125,16 @@ def build_document(
     scalars: dict[str, float | None] = {}
     field_confidence: dict[str, float] = {}
     unparsed_fields: list[str] = []
-    for field, texts in scalar_text.items():
-        joined = " ".join(texts)
+    for field_name, spans in scalar_spans.items():
+        chosen = _select_scalar_span(spans)
+        if chosen is None:
+            continue
+        joined = " ".join(chosen.texts)
         value = parse_money(joined)
-        scalars[field] = value
-        scalar_confs = scalar_conf[field]
-        field_confidence[field] = sum(scalar_confs) / len(scalar_confs)
+        scalars[field_name] = value
+        field_confidence[field_name] = chosen.mean_conf
         if value is None and joined.strip():
-            unparsed_fields.append(field)
+            unparsed_fields.append(field_name)
 
     return Document(
         id="",
