@@ -24,6 +24,7 @@ class _ScalarSpan:
     def mean_conf(self) -> float:
         return sum(self.confs) / len(self.confs) if self.confs else 0.0
 
+
 _LINE_FIELDS = {
     "menu.nm": "name",
     "menu.cnt": "qty",
