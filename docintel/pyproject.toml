@@ -33,7 +33,7 @@ dev = [
 ]
 # Build-time / data tooling (kept out of the runtime image).
 data = [
-    "datasets>=2.20",
+    "datasets>=2.20,<4",
     "huggingface-hub>=0.24",
     "Pillow>=10.3",
     "dvc>=3.51",
@@ -41,7 +41,7 @@ data = [
 train = [
     "transformers>=4.40",
     "accelerate>=1.1.0",
-    "datasets>=2.18",
+    "datasets>=2.18,<4",
     "seqeval>=1.2",
     "Pillow>=10.3",
     "scikit-learn>=1.4",
