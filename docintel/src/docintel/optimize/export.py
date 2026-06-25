@@ -41,3 +41,13 @@ def export_to_onnx(model_dir: Path, out_dir: Path) -> Path:
     out_dir.mkdir(parents=True, exist_ok=True)
     model.save_pretrained(str(out_dir))
     return out_dir
+
+
+def export_qa_to_onnx(model_dir: Path, out_dir: Path) -> Path:
+    """Export a question-answering model to ONNX (fp32) via Optimum."""
+    from optimum.onnxruntime import ORTModelForQuestionAnswering
+
+    model = ORTModelForQuestionAnswering.from_pretrained(str(model_dir), export=True)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    model.save_pretrained(str(out_dir))
+    return out_dir
