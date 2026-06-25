@@ -46,10 +46,14 @@ class ContractExtractor(Protocol):
 class CuadQaOnnxExtractor:
     """ONNX-INT8 extractive-QA model served via onnxruntime."""
 
+    #: Ordered candidate input names; only those declared by the graph are fed.
+    _CANDIDATE_INPUTS: tuple[str, ...] = ("input_ids", "attention_mask", "token_type_ids")
+
     def __init__(self, session: Any, tokenizer: Any, settings: Settings) -> None:
         self._session = session
         self._tokenizer = tokenizer
         self._settings = settings
+        self._input_names: frozenset[str] = frozenset(inp.name for inp in session.get_inputs())
 
     @classmethod
     def load(cls, settings: Settings, tracking_uri: str | None = None) -> CuadQaOnnxExtractor:
@@ -89,8 +93,9 @@ class CuadQaOnnxExtractor:
         num_windows = encoding["input_ids"].shape[0]
         for i in range(num_windows):
             feeds = {
-                "input_ids": encoding["input_ids"][i : i + 1].astype(np.int64),
-                "attention_mask": encoding["attention_mask"][i : i + 1].astype(np.int64),
+                name: encoding[name][i : i + 1].astype(np.int64)
+                for name in self._CANDIDATE_INPUTS
+                if name in self._input_names and name in encoding
             }
             start_logits, end_logits = self._session.run(None, feeds)
             offsets = [tuple(o) for o in encoding["offset_mapping"][i]]

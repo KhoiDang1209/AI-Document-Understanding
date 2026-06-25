@@ -24,6 +24,12 @@ def test_average_precision_perfect_ranking() -> None:
     assert ap == 1.0
 
 
+def test_average_precision_single_class_returns_zero() -> None:
+    """Single-class AUPR is undefined; guard must return 0.0 without warning."""
+    assert average_precision(scores=[0.9, 0.8, 0.7], labels=[1, 1, 1]) == 0.0
+    assert average_precision(scores=[0.1, 0.2, 0.3], labels=[0, 0, 0]) == 0.0
+
+
 def test_cer_basic() -> None:
     assert cer("contract", "contract") == 0.0
     assert cer("contract", "contracX") == 1 / 8

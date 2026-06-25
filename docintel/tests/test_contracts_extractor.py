@@ -1,12 +1,16 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import Any, NamedTuple
 
 import numpy as np
 
 from docintel.config import Settings
 from docintel.contracts.extractor import CuadQaOnnxExtractor, resolve_contract_bundle
+
+
+class _InputMeta(NamedTuple):
+    name: str
 
 
 def test_resolve_contract_bundle_prefers_local_path() -> None:
@@ -31,6 +35,9 @@ class _FakeEncoding:
             "offset_mapping": np.array([[(0, 0), (0, 5), (6, 10)]]),
         }
 
+    def __contains__(self, key: object) -> bool:
+        return key in self.data
+
     def __getitem__(self, key: str) -> Any:
         return self.data[key]
 
@@ -46,6 +53,9 @@ def test_extract_decodes_one_clause_per_strong_question(monkeypatch: Any) -> Non
     settings = Settings(contract_no_answer_threshold=0.0, contract_n_best=1)
 
     class _FakeSession:
+        def get_inputs(self) -> list[_InputMeta]:
+            return [_InputMeta("input_ids"), _InputMeta("attention_mask")]
+
         def run(self, _: Any, feeds: dict[str, Any]) -> list[Any]:
             # start favors token 1, end favors token 2 -> span "alpha beta"? offsets (0,10)
             start = np.array([[0.0, 5.0, 0.0]])
@@ -57,7 +67,9 @@ def test_extract_decodes_one_clause_per_strong_question(monkeypatch: Any) -> Non
         "docintel.contracts.extractor.all_questions", lambda: [("Parties", "Who are the parties?")]
     )
     extractor = CuadQaOnnxExtractor.__new__(CuadQaOnnxExtractor)
-    extractor._session = _FakeSession()  # type: ignore[attr-defined]
+    fake_session = _FakeSession()
+    extractor._session = fake_session  # type: ignore[attr-defined]
+    extractor._input_names = frozenset(inp.name for inp in fake_session.get_inputs())  # type: ignore[attr-defined]
     extractor._settings = settings  # type: ignore[attr-defined]
     extractor._encode = lambda question, text: _FakeEncoding()  # type: ignore[attr-defined]
 

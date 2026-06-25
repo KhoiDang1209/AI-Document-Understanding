@@ -64,7 +64,13 @@ def anls(prediction: str, ground_truth: str, threshold: float = 0.5) -> float:
 
 
 def average_precision(scores: list[float], labels: list[int]) -> float:
-    """Area under the precision-recall curve (AUPR) via scikit-learn."""
+    """Area under the precision-recall curve (AUPR) via scikit-learn.
+
+    Returns 0.0 when ``labels`` contains fewer than two distinct classes, since
+    AUPR is undefined in single-class scenarios and scikit-learn would warn.
+    """
+    if len(set(labels)) < 2:
+        return 0.0
     from sklearn.metrics import average_precision_score
 
     return float(average_precision_score(labels, scores))
