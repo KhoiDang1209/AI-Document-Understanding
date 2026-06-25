@@ -1,8 +1,8 @@
-"""Dual-path contract ingestion: born-digital text (PyMuPDF) or scanned OCR (docTR).
+"""Dual-path contract ingestion: born-digital text (liteparse) or scanned OCR (docTR).
 
 A born-digital PDF carries an extractable text layer; a scanned PDF does not, so
 its pages are rasterized and sent through the existing OCR engine. Heavy imports
-(fitz) live inside functions.
+(liteparse, fitz) live inside functions.
 """
 
 from __future__ import annotations
@@ -35,10 +35,11 @@ def select_source(total_text_chars: int, min_chars: int) -> Literal["digital", "
 
 def extract_digital_pages(data: bytes) -> list[str]:
     """Return per-page embedded text from a PDF (empty strings for image-only pages)."""
-    import fitz
+    from liteparse import LiteParse
 
-    with fitz.open(stream=data, filetype="pdf") as doc:
-        return [page.get_text("text") for page in doc]
+    parser = LiteParse(ocr_enabled=False, output_format="text")
+    result = parser.parse(data)
+    return [page.text for page in result.pages]
 
 
 def rasterize_pages(data: bytes) -> list[Image]:

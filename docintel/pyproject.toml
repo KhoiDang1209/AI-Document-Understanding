@@ -66,6 +66,7 @@ ui = [
     "httpx>=0.27",
 ]
 contracts = [
+    "liteparse>=2.2,<3",
     "pymupdf>=1.24",
 ]
 
