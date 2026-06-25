@@ -44,6 +44,7 @@ train = [
     "datasets>=2.18",
     "seqeval>=1.2",
     "Pillow>=10.3",
+    "scikit-learn>=1.4",
 ]
 kie = [
     "mlflow>=2.16,<3",
