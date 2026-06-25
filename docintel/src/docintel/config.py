@@ -71,6 +71,22 @@ class Settings(BaseSettings):
     ui_api_base_url: str = "http://localhost:8000"
     ui_request_timeout_s: float = 120.0
 
+    # Contract Intelligence (C1)
+    contract_model_name: str = "microsoft/deberta-v3-base"
+    contract_registered_model_name: str = "cuad-extractor"
+    contract_onnx_registered_model_name: str = "cuad-extractor-onnx-int8"
+    contract_onnx_model_version: str = "1"
+    contract_onnx_local_path: str | None = Field(
+        default=None,
+        description="Local contract ONNX bundle dir; if set, load it instead of the registry.",
+    )
+    contract_max_seq_length: int = 512
+    contract_doc_stride: int = 128
+    contract_n_best: int = 5
+    contract_max_answer_length: int = 256
+    contract_no_answer_threshold: float = 0.0
+    contract_max_upload_mb: float = 25.0
+
 
 @lru_cache
 def get_settings() -> Settings:
