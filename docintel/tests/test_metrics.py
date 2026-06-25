@@ -75,3 +75,29 @@ def test_extract_records_validation_metric(tmp_path: Any) -> None:
         body = client.get("/metrics").text
     app.dependency_overrides.clear()
     assert "docintel_validation_total{outcome=" in body
+
+
+def test_record_contract_extraction_counts_clauses() -> None:
+    from docintel.api.metrics import build_metrics, record_contract_extraction
+    from docintel.contracts.schema import ContractDocument, ExtractedClause
+
+    registry = CollectorRegistry()
+    metrics = build_metrics(registry)
+    doc = ContractDocument(
+        id="c1",
+        source="ocr",
+        clauses=[
+            ExtractedClause(
+                clause_type="Parties",
+                answer_text="Acme",
+                char_start=0,
+                char_end=4,
+                confidence=0.8,
+            ),
+        ],
+        derived={"Parties": ["Acme"]},
+        page_count=2,
+        created_at="2026-06-25T00:00:00+00:00",
+    )
+    record_contract_extraction(metrics, doc)
+    assert registry.get_sample_value("docintel_contract_clauses_total", {"source": "ocr"}) == 1.0

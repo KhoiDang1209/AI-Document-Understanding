@@ -11,6 +11,7 @@ from dataclasses import dataclass
 
 from prometheus_client import CollectorRegistry, Counter, Histogram
 
+from docintel.contracts.schema import ContractDocument
 from docintel.schema import Document
 
 _CONFIDENCE_BUCKETS: tuple[float, ...] = (0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0)
@@ -22,6 +23,8 @@ class Metrics:
 
     kie_field_confidence: Histogram
     validation_total: Counter
+    contract_clause_confidence: Histogram
+    contract_clause_total: Counter
 
 
 def build_metrics(registry: CollectorRegistry) -> Metrics:
@@ -39,6 +42,18 @@ def build_metrics(registry: CollectorRegistry) -> Metrics:
             labelnames=("outcome",),
             registry=registry,
         ),
+        contract_clause_confidence=Histogram(
+            "docintel_contract_clause_confidence",
+            "Per-clause extraction confidence observed on /contracts/extract.",
+            buckets=_CONFIDENCE_BUCKETS,
+            registry=registry,
+        ),
+        contract_clause_total=Counter(
+            "docintel_contract_clauses",
+            "Clauses extracted on /contracts/extract, labelled by ingestion source.",
+            labelnames=("source",),
+            registry=registry,
+        ),
     )
 
 
@@ -48,3 +63,10 @@ def record_extraction(metrics: Metrics, document: Document) -> None:
         metrics.kie_field_confidence.observe(value)
     outcome = "ok" if document.validation.ok else "failed"
     metrics.validation_total.labels(outcome=outcome).inc()
+
+
+def record_contract_extraction(metrics: Metrics, doc: ContractDocument) -> None:
+    """Record one extracted contract: clause confidences + clause count by source."""
+    for clause in doc.clauses:
+        metrics.contract_clause_confidence.observe(clause.confidence)
+    metrics.contract_clause_total.labels(source=doc.source).inc(len(doc.clauses))
