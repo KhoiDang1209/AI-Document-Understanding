@@ -87,6 +87,19 @@ class Settings(BaseSettings):
     contract_no_answer_threshold: float = 0.0
     contract_max_upload_mb: float = 25.0
 
+    # RAG / Vector retrieval (C2)
+    rag_embedding_model: str = "BAAI/bge-small-en-v1.5"
+    rag_embedding_dim: int = 384
+    rag_chunk_size: int = 1200
+    rag_chunk_overlap: int = 200
+    qdrant_url: str = "http://qdrant:6333"
+    qdrant_collection: str = "contract_chunks"
+    rag_top_k: int = 5
+    llm_base_url: str | None = None
+    llm_api_key: str | None = None
+    llm_model: str = "Qwen/Qwen2.5-7B-Instruct"
+    llm_timeout_s: float = 60.0
+
 
 @lru_cache
 def get_settings() -> Settings:
