@@ -76,6 +76,9 @@ rag = [
     "langchain-qdrant>=0.2",
     "qdrant-client>=1.11",
 ]
+eval = [
+    "ragas>=0.2",
+]
 
 [project.scripts]
 docintel-download-data = "docintel.scripts.download_data:main"
