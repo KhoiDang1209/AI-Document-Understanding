@@ -75,3 +75,4 @@ def test_degrade_when_llm_errors() -> None:
     )
     assert resp.answer is None
     assert resp.generation_skipped is True
+    assert len(resp.citations) >= 1

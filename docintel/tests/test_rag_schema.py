@@ -17,6 +17,16 @@ def test_ask_request_requires_question() -> None:
         AskRequest()  # type: ignore[call-arg]
 
 
+def test_ask_request_rejects_empty_question() -> None:
+    with pytest.raises(ValidationError):
+        AskRequest(question="")
+
+
+def test_ask_request_rejects_nonpositive_top_k() -> None:
+    with pytest.raises(ValidationError):
+        AskRequest(question="q", top_k=0)
+
+
 def test_ask_response_roundtrip() -> None:
     chunk = RetrievedChunk(
         contract_id="c1",

@@ -81,6 +81,7 @@ def search(
 
     query_filter = None
     if contract_id is not None:
+        # langchain-qdrant nests chunk metadata under the "metadata" payload key
         query_filter = Filter(
             must=[FieldCondition(key="metadata.contract_id", match=MatchValue(value=contract_id))]
         )

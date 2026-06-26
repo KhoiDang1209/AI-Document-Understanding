@@ -21,9 +21,9 @@ class RetrievedChunk(BaseModel):
 class AskRequest(BaseModel):
     """A natural-language question, optionally scoped to one contract."""
 
-    question: str
+    question: str = Field(min_length=1)
     contract_id: str | None = None
-    top_k: int | None = None
+    top_k: int | None = Field(default=None, gt=0)
 
 
 class AskResponse(BaseModel):
