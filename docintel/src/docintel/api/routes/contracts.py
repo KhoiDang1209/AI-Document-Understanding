@@ -11,12 +11,14 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, status
 
 from docintel.api.metrics import Metrics, record_contract_extraction
+from docintel.api.routes.ask import get_rag_store_optional
 from docintel.api.routes.extract import get_metrics, get_ocr_engine, get_s3_client
 from docintel.config import Settings, get_settings
 from docintel.contracts.extractor import ContractExtractor, CuadQaOnnxExtractor
 from docintel.contracts.ingest import ingest_pdf
 from docintel.contracts.schema import ContractDocument, build_derived
 from docintel.pipeline.ocr import OCREngine
+from docintel.rag.index import index_contract
 from docintel.storage.contracts_db import get_contract, init_contracts_db, save_contract
 from docintel.storage.objects import ensure_bucket, put_image
 
@@ -47,6 +49,7 @@ async def extract_contract(
     extractor: ContractExtractor = Depends(get_contract_extractor),  # noqa: B008
     s3: Any = Depends(get_s3_client),  # noqa: B008
     metrics: Metrics = Depends(get_metrics),  # noqa: B008
+    rag_store: Any = Depends(get_rag_store_optional),  # noqa: B008
 ) -> ContractDocument:
     """Ingest a PDF, extract clauses, persist, and return a ContractDocument."""
     if file.content_type != _PDF_TYPE:
@@ -81,6 +84,17 @@ async def extract_contract(
     init_contracts_db(settings.sqlite_path)
     save_contract(settings.sqlite_path, doc, pdf_key)
 
+    chunks_indexed = 0
+    if rag_store is not None:
+        try:
+            chunks_indexed = index_contract(doc.id, ingested.text, doc.clauses, rag_store, settings)
+        except Exception:
+            logger.warning(
+                "contracts.extract.index_failed",
+                extra={"contract_id": doc.id},
+                exc_info=True,
+            )
+
     logger.info(
         "contracts.extract.complete",
         extra={
@@ -88,6 +102,7 @@ async def extract_contract(
             "latency_ms": round(latency_ms, 2),
             "clauses": len(doc.clauses),
             "source": doc.source,
+            "chunks_indexed": chunks_indexed,
         },
     )
     record_contract_extraction(metrics, doc)

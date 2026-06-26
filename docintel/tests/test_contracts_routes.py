@@ -8,6 +8,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from docintel.api.main import create_app
+from docintel.api.routes.ask import get_rag_store_optional
 from docintel.api.routes.contracts import get_contract_extractor
 from docintel.api.routes.extract import get_ocr_engine, get_s3_client
 from docintel.config import Settings, get_settings
@@ -32,6 +33,7 @@ def client(tmp_path: Any) -> Iterator[TestClient]:
     app.dependency_overrides[get_ocr_engine] = lambda: lambda image: None
     app.dependency_overrides[get_s3_client] = lambda: _FakeS3()
     app.dependency_overrides[get_contract_extractor] = lambda: _StubExtractor()
+    app.dependency_overrides[get_rag_store_optional] = lambda: None
     # ingest is monkeypatched per-test to avoid building a real PDF
     with TestClient(app) as c:
         yield c
@@ -66,3 +68,26 @@ def test_extract_and_retrieve(client: TestClient, monkeypatch: Any) -> None:
     assert got.json()["id"] == cid
 
     assert client.get("/contracts/missing").status_code == 404
+
+
+def test_extract_succeeds_when_indexing_fails(client: TestClient, monkeypatch: Any) -> None:
+    from docintel.contracts.ingest import IngestedDoc
+
+    monkeypatch.setattr(
+        "docintel.api.routes.contracts.ingest_pdf",
+        lambda data, ocr_engine, settings: IngestedDoc(
+            text="Acme and Globex", page_count=1, source="digital"
+        ),
+    )
+
+    def _boom(*args: Any, **kwargs: Any) -> int:
+        raise RuntimeError("qdrant down")
+
+    monkeypatch.setattr("docintel.api.routes.contracts.index_contract", _boom)
+
+    client.app.dependency_overrides[get_rag_store_optional] = lambda: object()
+
+    resp = client.post(
+        "/contracts/extract", files={"file": ("c.pdf", b"%PDF-1.4", "application/pdf")}
+    )
+    assert resp.status_code == 200  # indexing failure must not break extraction
