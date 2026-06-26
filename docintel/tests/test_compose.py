@@ -8,9 +8,8 @@ import yaml
 
 COMPOSE_FILE = Path(__file__).resolve().parent.parent / "docker-compose.yml"
 
-# Core MLOps spine plus the Phase 5 observability stack. The Streamlit UI runs
-# locally (not containerised). Qdrant (GraphRAG) remains out of scope until the
-# advancements.
+# Core MLOps spine, the Phase 5 observability stack, and the C2 Qdrant vector store.
+# The Streamlit UI runs locally (not containerised).
 EXPECTED_SERVICES = {
     "api",
     "mlflow",
@@ -19,6 +18,7 @@ EXPECTED_SERVICES = {
     "loki",
     "promtail",
     "grafana",
+    "qdrant",
 }
 
 
