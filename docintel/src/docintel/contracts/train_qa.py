@@ -16,10 +16,23 @@ from typing import Any
 from docintel.contracts.qa_config import QaTrainingConfig
 
 
+def resolve_mixed_precision(mode: str) -> tuple[bool, bool]:
+    """Return (bf16, fp16) flags for the current GPU; bf16 falls back to fp16 if unsupported."""
+    import torch
+
+    if mode == "none" or not torch.cuda.is_available():
+        return False, False
+    if mode == "fp16":
+        return False, True
+    bf16_ok = torch.cuda.is_bf16_supported()  # bf16 needs Ampere+ (e.g. A100), not T4
+    return (True, False) if bf16_ok else (False, True)
+
+
 def build_qa_training_arguments(config: QaTrainingConfig, output_dir: str) -> Any:
     """Map QaTrainingConfig to Hugging Face TrainingArguments."""
     from transformers import TrainingArguments
 
+    bf16, fp16 = resolve_mixed_precision(config.mixed_precision)
     return TrainingArguments(
         output_dir=output_dir,
         num_train_epochs=config.num_train_epochs,
@@ -31,6 +44,10 @@ def build_qa_training_arguments(config: QaTrainingConfig, output_dir: str) -> An
         seed=config.seed,
         eval_strategy=config.eval_strategy,
         save_strategy=config.save_strategy,
+        save_steps=config.save_steps,
+        save_total_limit=config.save_total_limit,
+        bf16=bf16,
+        fp16=fp16,
         logging_steps=50,
     )
 
@@ -49,9 +66,24 @@ def collect_repro_params(
         "seed": str(config.seed),
         "max_seq_length": str(config.max_seq_length),
         "doc_stride": str(config.doc_stride),
+        "mixed_precision": config.mixed_precision,
         "dataset_revision": dataset_revision,
         "git_sha": git_sha,
     }
+
+
+def find_last_checkpoint(output_dir: str) -> str | None:
+    """Return the newest checkpoint dir under output_dir, or None to start fresh.
+
+    Lets a session that timed out resume on a fresh Colab runtime when output_dir
+    points at persistent storage (Google Drive).
+    """
+    from transformers.trainer_utils import get_last_checkpoint
+
+    if not Path(output_dir).is_dir():
+        return None
+    checkpoint: str | None = get_last_checkpoint(output_dir)  # type: ignore[no-untyped-call]
+    return checkpoint
 
 
 def save_qa_bundle(
@@ -85,9 +117,10 @@ def run_qa_training(
     trainer = Trainer(
         model=model, args=args, train_dataset=train_dataset, eval_dataset=eval_dataset
     )
+    last_checkpoint = find_last_checkpoint(output_dir)
     with mlflow.start_run():
         mlflow.log_params(collect_repro_params(config, dataset_revision, git_sha))
-        trainer.train()
+        trainer.train(resume_from_checkpoint=last_checkpoint)
         eval_metrics = trainer.evaluate()
         mlflow.log_metrics({k: v for k, v in eval_metrics.items() if isinstance(v, (int, float))})
         bundle = save_qa_bundle(model, tokenizer, eval_metrics, bundle_dir)

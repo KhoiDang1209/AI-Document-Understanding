@@ -24,4 +24,8 @@ class QaTrainingConfig(BaseModel):
     max_seq_length: int = 512
     doc_stride: int = 128
     eval_strategy: str = "epoch"
-    save_strategy: str = "epoch"
+    save_strategy: str = "steps"
+    save_steps: int = 500
+    save_total_limit: int = 2
+    # "bf16" | "fp16" | "none"; bf16 falls back to fp16 if the GPU lacks support.
+    mixed_precision: str = "bf16"

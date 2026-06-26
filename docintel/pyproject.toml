@@ -100,7 +100,7 @@ explicit_package_bases = true
 namespace_packages = true
 
 [[tool.mypy.overrides]]
-module = ["datasets.*", "huggingface_hub.*", "cv2.*", "doctr.*", "PIL.*", "seqeval.*", "mlflow.*", "optimum.*", "onnx.*", "onnxruntime.*", "matplotlib.*", "boto3.*", "botocore.*", "transformers.*", "fitz.*", "sklearn.*"]
+module = ["datasets.*", "huggingface_hub.*", "cv2.*", "doctr.*", "PIL.*", "seqeval.*", "mlflow.*", "optimum.*", "onnx.*", "onnxruntime.*", "matplotlib.*", "boto3.*", "botocore.*", "transformers.*", "fitz.*", "sklearn.*", "torch.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
