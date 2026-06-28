@@ -9,6 +9,7 @@ imported inside functions so this module loads cheaply on the laptop.
 from __future__ import annotations
 
 import json
+import math
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
@@ -17,7 +18,12 @@ from docintel.contracts.qa_config import QaTrainingConfig
 
 
 def resolve_mixed_precision(mode: str) -> tuple[bool, bool]:
-    """Return (bf16, fp16) flags for the current GPU; bf16 falls back to fp16 if unsupported."""
+    """Return (bf16, fp16) flags for the current GPU.
+
+    A ``"bf16"`` request raises on GPUs without bf16 support rather than silently
+    degrading to fp16: DeBERTa-v3's disentangled attention overflows in fp16 and
+    produces NaN losses, so the fallback would quietly corrupt the whole run.
+    """
     import torch
 
     if mode == "none" or not torch.cuda.is_available():
@@ -25,7 +31,13 @@ def resolve_mixed_precision(mode: str) -> tuple[bool, bool]:
     if mode == "fp16":
         return False, True
     bf16_ok = torch.cuda.is_bf16_supported()  # bf16 needs Ampere+ (e.g. A100), not T4
-    return (True, False) if bf16_ok else (False, True)
+    if not bf16_ok:
+        raise RuntimeError(
+            "mixed_precision='bf16' requested but this GPU lacks bf16 support. "
+            "fp16 produces NaN losses with DeBERTa-v3; use a bf16-capable GPU "
+            "(A100/L4) or set mixed_precision='none' (fp32)."
+        )
+    return True, False
 
 
 def build_qa_training_arguments(config: QaTrainingConfig, output_dir: str) -> Any:
@@ -89,11 +101,16 @@ def find_last_checkpoint(output_dir: str) -> str | None:
 def save_qa_bundle(
     model: Any, tokenizer: Any, metrics: Mapping[str, float], bundle_dir: Path
 ) -> Path:
-    """Write a self-contained model bundle for download + ONNX export."""
+    """Write a self-contained model bundle for download + ONNX export.
+
+    Non-finite metrics (NaN/inf from a diverged run) are written as JSON ``null``
+    so ``metrics.json`` stays valid JSON rather than the non-standard ``NaN`` token.
+    """
     bundle_dir.mkdir(parents=True, exist_ok=True)
     model.save_pretrained(str(bundle_dir / "model"))
     tokenizer.save_pretrained(str(bundle_dir / "tokenizer"))
-    (bundle_dir / "metrics.json").write_text(json.dumps(dict(metrics)), encoding="utf-8")
+    safe_metrics = {k: (v if math.isfinite(v) else None) for k, v in metrics.items()}
+    (bundle_dir / "metrics.json").write_text(json.dumps(safe_metrics), encoding="utf-8")
     return bundle_dir
 
 
@@ -112,7 +129,10 @@ def run_qa_training(
     from transformers import AutoModelForQuestionAnswering, Trainer, set_seed
 
     set_seed(config.seed)
-    model = AutoModelForQuestionAnswering.from_pretrained(config.model_name)
+    # Pin fp32 master weights: newer transformers can otherwise inherit the
+    # checkpoint's dtype, loading DeBERTa-v3 in pure fp16 and yielding NaN losses.
+    # bf16 (when enabled) is applied as autocast by the Trainer, not to the weights.
+    model = AutoModelForQuestionAnswering.from_pretrained(config.model_name, dtype="float32")
     args = build_qa_training_arguments(config, output_dir)
     trainer = Trainer(
         model=model, args=args, train_dataset=train_dataset, eval_dataset=eval_dataset

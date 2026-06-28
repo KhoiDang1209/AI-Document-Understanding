@@ -27,5 +27,6 @@ class QaTrainingConfig(BaseModel):
     save_strategy: str = "steps"
     save_steps: int = 500
     save_total_limit: int = 2
-    # "bf16" | "fp16" | "none"; bf16 falls back to fp16 if the GPU lacks support.
+    # "bf16" | "fp16" | "none"; "bf16" raises on GPUs without bf16 support (no
+    # silent fp16 fallback — fp16 produces NaN losses with DeBERTa-v3).
     mixed_precision: str = "bf16"

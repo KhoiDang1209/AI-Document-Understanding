@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 from pathlib import Path
 
 from docintel.contracts.qa_config import QaTrainingConfig
@@ -29,3 +30,12 @@ def test_save_qa_bundle_writes_artifacts(tmp_path: Path) -> None:
     assert (bundle / "model" / "marker").exists()
     assert (bundle / "tokenizer" / "marker").exists()
     assert json.loads((bundle / "metrics.json").read_text(encoding="utf-8")) == {"f1": 0.5}
+
+
+def test_save_qa_bundle_writes_valid_json_for_non_finite_metrics(tmp_path: Path) -> None:
+    bundle = save_qa_bundle(
+        _FakeSavable(), _FakeSavable(), {"eval_loss": math.nan}, tmp_path / "bundle"
+    )
+    # NaN is not valid JSON; the guard maps it to null so the file still parses.
+    loaded = json.loads((bundle / "metrics.json").read_text(encoding="utf-8"))
+    assert loaded == {"eval_loss": None}
