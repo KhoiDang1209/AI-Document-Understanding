@@ -15,7 +15,8 @@ class QaTrainingConfig(BaseModel):
 
     model_name: str = "microsoft/deberta-v3-base"
     num_train_epochs: float = 3.0
-    learning_rate: float = 3e-5
+    # DeBERTa-v3 diverges to NaN at 3e-5 over a full CUAD epoch; 1.5e-5 is stable.
+    learning_rate: float = 1.5e-5
     train_batch_size: int = 8
     eval_batch_size: int = 16
     weight_decay: float = 0.01
