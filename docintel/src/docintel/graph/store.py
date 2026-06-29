@@ -61,6 +61,6 @@ def build_graph_store(settings: Settings) -> GraphStore | None:
     """Return a GraphStore, or None when the graph path is disabled."""
     if not settings.graph_enabled:
         return None
-    from docintel.graph.templates import Neo4jGraphStore  # type: ignore[import-untyped]
+    from docintel.graph.templates import Neo4jGraphStore
 
-    return Neo4jGraphStore(settings)  # type: ignore[no-any-return]
+    return Neo4jGraphStore(settings)
