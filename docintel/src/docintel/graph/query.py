@@ -22,7 +22,11 @@ def run_graph_query(
     settings: Settings,
     reference_date: date | None = None,
 ) -> list[RetrievedChunk]:
-    """Execute the routed template and map result rows to cited RetrievedChunks."""
+    """Execute the routed template and map result rows to cited RetrievedChunks.
+
+    Graph templates are corpus-wide by design, so any per-question ``contract_id`` is not
+    applied here (the two date templates answer cross-contract questions).
+    """
     assert decision.template is not None  # router guarantees this for target == "graph"
     start = reference_date or date.today()
     within = decision.within_days or settings.graph_default_within_days

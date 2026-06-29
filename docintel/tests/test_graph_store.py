@@ -45,3 +45,11 @@ def test_upsert_is_idempotent_per_contract() -> None:
 
 def test_build_graph_store_disabled_returns_none() -> None:
     assert build_graph_store(Settings(graph_enabled=False)) is None
+
+
+def test_unknown_template_raises_keyerror() -> None:
+    import pytest
+
+    store = InMemoryGraphStore()
+    with pytest.raises(KeyError):
+        store.run_template("nope", {"lower": "2025-01-01", "upper": "2025-12-31"})

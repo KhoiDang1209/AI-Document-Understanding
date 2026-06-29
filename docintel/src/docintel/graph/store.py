@@ -35,6 +35,8 @@ class InMemoryGraphStore:
         self._data[gc.contract_id] = gc
 
     def run_template(self, name: str, params: dict[str, Any]) -> list[dict[str, Any]]:
+        if name not in (_EXPIRING, _AUTO_RENEW):
+            raise KeyError(name)  # match Neo4jGraphStore.run_template -> get_template
         lower, upper = params["lower"], params["upper"]
         rows: list[dict[str, Any]] = []
         for gc in self._data.values():
