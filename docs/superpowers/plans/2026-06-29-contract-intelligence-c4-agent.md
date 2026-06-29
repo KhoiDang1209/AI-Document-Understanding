@@ -193,7 +193,7 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 - Produces:
   - `AgentRequest(task: str [min_length=1], contract_id: str | None = None)`.
   - `AgentResponse(task: str, answer: str | None, status: Literal["ok", "degraded"], citations: list[RetrievedChunk], steps: list[str], retries: int, contract_id: str | None, trace_id: str | None)`.
-  - `AgentState` — a `TypedDict` with keys: `task: str`, `contract_id: str | None`, `route_target: str`, `citations: list[RetrievedChunk]`, `answer: str | None`, `generation_skipped: bool`, `retries: int`, `fallback: bool`, `steps: Annotated[list[str], operator.add]`.
+  - `AgentState` — a `TypedDict` with keys: `task: str`, `contract_id: str | None`, `route_target: str`, `citations: list[RetrievedChunk]`, `answer: str | None`, `generation_skipped: bool`, `retries: int`, `fallback: bool`, `do_retry: bool`, `steps: Annotated[list[str], operator.add]`.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -269,6 +269,7 @@ class AgentState(TypedDict, total=False):
     generation_skipped: bool
     retries: int
     fallback: bool
+    do_retry: bool
     steps: Annotated[list[str], operator.add]
 ```
 
@@ -740,12 +741,11 @@ def _retrieve_node(state: AgentState, deps: AgentDeps) -> AgentState:
 
 
 def _generate_node(state: AgentState, deps: AgentDeps) -> AgentState:
-    config = {"callbacks": [deps.tracer]} if deps.tracer is not None else None
+    # The tracer is propagated to this node's LLM call via the graph-level invoke config
+    # (run_agent passes callbacks once); generate_tool reuses C2's generate_or_degrade.
     resp = generate_tool(
         state["task"], state.get("citations", []), deps.llm, state.get("contract_id")
     )
-    # generate_tool reuses generate_or_degrade; tracer is attached for traced LLM calls.
-    _ = config
     return {
         "answer": resp.answer,
         "generation_skipped": resp.generation_skipped,
@@ -754,17 +754,22 @@ def _generate_node(state: AgentState, deps: AgentDeps) -> AgentState:
 
 
 def _critique_node(state: AgentState, deps: AgentDeps) -> AgentState:
+    # Decide retry once, per iteration. do_retry is the single source of truth for the edge,
+    # so the loop cannot continue after the cap is reached (fallback alone would never clear).
     no_citations = not state.get("citations")
     can_retry = state.get("retries", 0) < deps.settings.agent_max_retries
     if no_citations and can_retry:
-        return {"fallback": True, "retries": state.get("retries", 0) + 1, "steps": ["critique:retry"]}
-    return {"steps": ["critique:finish"]}
+        return {
+            "do_retry": True,
+            "fallback": True,
+            "retries": state.get("retries", 0) + 1,
+            "steps": ["critique:retry"],
+        }
+    return {"do_retry": False, "steps": ["critique:finish"]}
 
 
 def _should_retry(state: AgentState, deps: AgentDeps) -> str:
-    no_citations = not state.get("citations")
-    can_retry = state.get("retries", 0) <= deps.settings.agent_max_retries
-    return "retrieve" if (no_citations and can_retry and state.get("fallback")) else "end"
+    return "retrieve" if state.get("do_retry") else "end"
 
 
 def build_agent_graph(deps: AgentDeps) -> Any:
@@ -792,7 +797,9 @@ def run_agent(task: str, contract_id: str | None, deps: AgentDeps) -> AgentRespo
     """Run the compiled graph for one task and map the final state to AgentResponse."""
     compiled = build_agent_graph(deps)
     initial: AgentState = {"task": task, "contract_id": contract_id, "retries": 0, "steps": []}
-    final: AgentState = compiled.invoke(initial)
+    # Pass the tracer once at graph level; LangChain callback propagation reaches the node LLM call.
+    config = {"callbacks": [deps.tracer]} if deps.tracer is not None else None
+    final: AgentState = compiled.invoke(initial, config=config)
     answer = final.get("answer")
     skipped = final.get("generation_skipped", True)
     status = "ok" if (answer is not None and not skipped) else "degraded"
@@ -808,7 +815,7 @@ def run_agent(task: str, contract_id: str | None, deps: AgentDeps) -> AgentRespo
     )
 ```
 
-> Note on the retry edge: `_critique_node` flips `fallback` and increments `retries`; `_should_retry` sends control back to `retrieve` only while `fallback` is set and the cap is not exceeded, then to `END`. With `agent_max_retries=1` the graph makes at most one extra retrieve pass, so it cannot loop unbounded.
+> Note on the retry edge: `_critique_node` computes `do_retry` fresh each iteration (true only when there are no citations and `retries < agent_max_retries`), sets `fallback`, and increments `retries`; `_should_retry` routes back to `retrieve` iff `do_retry` is set, else to `END`. Because `do_retry` is recomputed every critique pass and goes false once the cap is hit, the graph makes at most `agent_max_retries` extra retrieve passes — it cannot loop unbounded (the earlier `fallback`-based edge could).
 
 - [ ] **Step 4: Run test to verify it passes**
 
