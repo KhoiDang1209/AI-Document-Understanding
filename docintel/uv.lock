@@ -917,7 +917,7 @@ wheels = [
 
 [[package]]
 name = "docintel"
-version = "0.1.0"
+version = "0.1.1"
 source = { editable = "." }
 dependencies = [
     { name = "fastapi" },
@@ -952,6 +952,9 @@ dev = [
 ]
 eval = [
     { name = "ragas" },
+]
+graph = [
+    { name = "neo4j" },
 ]
 kie = [
     { name = "boto3" },
@@ -1007,6 +1010,7 @@ requires-dist = [
     { name = "matplotlib", marker = "extra == 'optimize'", specifier = ">=3.8" },
     { name = "mlflow", marker = "extra == 'kie'", specifier = ">=2.16,<3" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.10" },
+    { name = "neo4j", marker = "extra == 'graph'", specifier = ">=5.0" },
     { name = "numpy", specifier = ">=1.26" },
     { name = "onnx", marker = "extra == 'optimize'", specifier = ">=1.16" },
     { name = "onnxruntime", marker = "extra == 'serve'", specifier = ">=1.16" },
@@ -1035,7 +1039,7 @@ requires-dist = [
     { name = "transformers", marker = "extra == 'train'", specifier = ">=4.40" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.30" },
 ]
-provides-extras = ["dev", "data", "train", "kie", "optimize", "serve", "ui", "contracts", "rag", "eval"]
+provides-extras = ["dev", "data", "train", "kie", "optimize", "serve", "ui", "contracts", "rag", "graph", "eval"]
 
 [[package]]
 name = "docker"
@@ -3118,6 +3122,18 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/62/3c/c4ef2164a71c1a63d7f1ae411c4082c5fa872405106db60a4b7114989ad7/narwhals-2.22.1.tar.gz", hash = "sha256:d62920805a0a43b7ff8b54b0c0d3142d796f8a9301836ada37e573d6a33cbcd9", size = 647493, upload-time = "2026-06-05T12:34:34.051Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/48/ca/36339329c4604adbcc99c899b7eb1ce1a555c499b6a6860757dc9bfed36d/narwhals-2.22.1-py3-none-any.whl", hash = "sha256:60567d774edf77db53906f89d9fbd164e66e56d66d388e1e6990f17ac33cfb53", size = 454815, upload-time = "2026-06-05T12:34:32.289Z" },
+]
+
+[[package]]
+name = "neo4j"
+version = "6.2.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pytz" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/ce/f4/aaa4ac19adae4b01bc742b63afd2672a77e7351566f02721e713e4b863ee/neo4j-6.2.0.tar.gz", hash = "sha256:e1e246b65b572bd8ea97f9e0e721b7d40a5ce53e53d0007c29aef63e4f9124d9", size = 241459, upload-time = "2026-05-04T07:35:41.428Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e6/cf/1c3795866cefaac6e648d4e98c373cafd97810f6e317c307371007ab4abb/neo4j-6.2.0-py3-none-any.whl", hash = "sha256:b87abdd13a5cc2e3bd51026926c2f20ac38fa3febe98c340520dce19e97388d0", size = 327824, upload-time = "2026-05-04T07:35:39.604Z" },
 ]
 
 [[package]]
