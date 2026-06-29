@@ -27,6 +27,9 @@ class Metrics:
     contract_clause_total: Counter
     graph_query_latency: Histogram
     router_decision_total: Counter
+    agent_run_total: Counter
+    agent_retries: Counter
+    agent_steps: Histogram
 
 
 def build_metrics(registry: CollectorRegistry) -> Metrics:
@@ -65,6 +68,23 @@ def build_metrics(registry: CollectorRegistry) -> Metrics:
             "docintel_router_decisions",
             "/ask routing decisions, labelled by target.",
             labelnames=("target",),
+            registry=registry,
+        ),
+        agent_run_total=Counter(
+            "docintel_agent_runs",
+            "/agent runs, labelled by terminal status.",
+            labelnames=("status",),
+            registry=registry,
+        ),
+        agent_retries=Counter(
+            "docintel_agent_retries",
+            "Total retry passes taken across /agent runs.",
+            registry=registry,
+        ),
+        agent_steps=Histogram(
+            "docintel_agent_steps",
+            "Number of graph steps executed per /agent run.",
+            buckets=(1, 2, 3, 4, 5, 6, 8, 10),
             registry=registry,
         ),
     )
