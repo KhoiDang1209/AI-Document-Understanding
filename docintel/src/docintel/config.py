@@ -100,6 +100,14 @@ class Settings(BaseSettings):
     llm_model: str = "Qwen/Qwen2.5-7B-Instruct"
     llm_timeout_s: float = 60.0
 
+    # GraphRAG / Neo4j (C3)
+    neo4j_uri: str = "bolt://neo4j:7687"
+    neo4j_user: str = "neo4j"
+    neo4j_password: str = "neo4j"
+    neo4j_database: str = "neo4j"
+    graph_enabled: bool = True
+    graph_default_within_days: int = 90
+
 
 @lru_cache
 def get_settings() -> Settings:
