@@ -11,12 +11,13 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, status
 
 from docintel.api.metrics import Metrics, record_contract_extraction
-from docintel.api.routes.ask import get_rag_store_optional
+from docintel.api.routes.ask import get_graph_store_optional, get_rag_store_optional
 from docintel.api.routes.extract import get_metrics, get_ocr_engine, get_s3_client
 from docintel.config import Settings, get_settings
 from docintel.contracts.extractor import ContractExtractor, CuadQaOnnxExtractor
 from docintel.contracts.ingest import ingest_pdf
 from docintel.contracts.schema import ContractDocument, build_derived
+from docintel.graph.build import build_contract
 from docintel.pipeline.ocr import OCREngine
 from docintel.rag.index import index_contract
 from docintel.storage.contracts_db import get_contract, init_contracts_db, save_contract
@@ -50,6 +51,7 @@ async def extract_contract(
     s3: Any = Depends(get_s3_client),  # noqa: B008
     metrics: Metrics = Depends(get_metrics),  # noqa: B008
     rag_store: Any = Depends(get_rag_store_optional),  # noqa: B008
+    graph_store: Any = Depends(get_graph_store_optional),  # noqa: B008
 ) -> ContractDocument:
     """Ingest a PDF, extract clauses, persist, and return a ContractDocument."""
     if file.content_type != _PDF_TYPE:
@@ -91,6 +93,16 @@ async def extract_contract(
         except Exception:
             logger.warning(
                 "contracts.extract.index_failed",
+                extra={"contract_id": doc.id},
+                exc_info=True,
+            )
+
+    if graph_store is not None:
+        try:
+            build_contract(doc, graph_store)
+        except Exception:
+            logger.warning(
+                "contracts.extract.graph_build_failed",
                 extra={"contract_id": doc.id},
                 exc_info=True,
             )

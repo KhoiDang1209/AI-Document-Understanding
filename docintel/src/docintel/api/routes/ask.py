@@ -8,6 +8,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 from docintel.config import Settings, get_settings
+from docintel.graph.store import build_graph_store
 from docintel.rag.answer import answer_question
 from docintel.rag.embed import build_embedder
 from docintel.rag.llm import build_llm
@@ -51,6 +52,32 @@ def get_rag_llm(request: Request, settings: Settings = Depends(get_settings)) ->
         llm = build_llm(settings)
         request.app.state.rag_llm = llm
     return llm
+
+
+def ensure_graph_store(app: Any, settings: Settings) -> Any:
+    """Build the graph store once and cache it on app.state (None when disabled)."""
+    store = getattr(app.state, "graph_store", None)
+    if store is None:
+        store = build_graph_store(settings)
+        app.state.graph_store = store
+    return store
+
+
+def get_graph_store(request: Request, settings: Settings = Depends(get_settings)) -> Any | None:  # noqa: B008
+    """Graph store dependency for /ask routing; None when graph is disabled."""
+    return ensure_graph_store(request.app, settings)
+
+
+def get_graph_store_optional(
+    request: Request,
+    settings: Settings = Depends(get_settings),  # noqa: B008
+) -> Any | None:
+    """Best-effort graph store for extract-time build; returns None instead of raising."""
+    try:
+        return ensure_graph_store(request.app, settings)
+    except Exception:
+        logger.warning("graph.store.unavailable", exc_info=True)
+        return None
 
 
 @router.post(

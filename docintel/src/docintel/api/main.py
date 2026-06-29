@@ -30,6 +30,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.contract_extractor = None
     app.state.rag_store = None
     app.state.rag_llm = None
+    app.state.graph_store = None
     logger.info(
         "service.startup",
         extra={"environment": settings.environment, "version": __version__},
