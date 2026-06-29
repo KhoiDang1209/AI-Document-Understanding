@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "docintel"
-version = "0.1.0"
+version = "0.1.1"
 description = "DocIntel — production-grade Document AI: images to validated, queryable structured data."
 readme = "README.md"
 requires-python = ">=3.12"

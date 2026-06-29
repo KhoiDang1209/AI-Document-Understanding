@@ -61,6 +61,7 @@ def build_qa_training_arguments(config: QaTrainingConfig, output_dir: str) -> An
         bf16=bf16,
         fp16=fp16,
         logging_steps=50,
+        logging_nan_inf_filter=config.log_nan_inf_filter,
     )
 
 

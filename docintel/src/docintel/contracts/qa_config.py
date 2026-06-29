@@ -31,3 +31,7 @@ class QaTrainingConfig(BaseModel):
     # "bf16" | "fp16" | "none"; "bf16" raises on GPUs without bf16 support (no
     # silent fp16 fallback — fp16 produces NaN losses with DeBERTa-v3).
     mixed_precision: str = "bf16"
+    # HF Trainer default (True) substitutes the running average for NaN/inf steps,
+    # so a diverged run displays "0.000000" instead of the real loss. Set False to
+    # see the true per-step loss and pinpoint when a run goes NaN.
+    log_nan_inf_filter: bool = True
