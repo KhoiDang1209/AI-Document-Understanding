@@ -108,6 +108,13 @@ class Settings(BaseSettings):
     graph_enabled: bool = True
     graph_default_within_days: int = 90
 
+    # Agent / LangGraph + Langfuse (C4)
+    langfuse_host: str = "http://langfuse:3000"
+    langfuse_public_key: str | None = None
+    langfuse_secret_key: str | None = None
+    agent_enabled: bool = True
+    agent_max_retries: int = 1
+
 
 @lru_cache
 def get_settings() -> Settings:

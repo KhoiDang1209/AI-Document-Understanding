@@ -82,6 +82,10 @@ graph = [
 eval = [
     "ragas>=0.2",
 ]
+agent = [
+    "langgraph>=0.2,<0.3",
+    "langfuse>=2.0,<3",
+]
 
 [project.scripts]
 docintel-download-data = "docintel.scripts.download_data:main"
@@ -113,7 +117,7 @@ explicit_package_bases = true
 namespace_packages = true
 
 [[tool.mypy.overrides]]
-module = ["datasets.*", "huggingface_hub.*", "cv2.*", "doctr.*", "PIL.*", "seqeval.*", "mlflow.*", "optimum.*", "onnx.*", "onnxruntime.*", "matplotlib.*", "boto3.*", "botocore.*", "transformers.*", "fitz.*", "sklearn.*", "torch.*", "fastembed.*", "qdrant_client.*", "langchain.*", "langchain_core.*", "langchain_openai.*", "langchain_qdrant.*", "neo4j.*"]
+module = ["datasets.*", "huggingface_hub.*", "cv2.*", "doctr.*", "PIL.*", "seqeval.*", "mlflow.*", "optimum.*", "onnx.*", "onnxruntime.*", "matplotlib.*", "boto3.*", "botocore.*", "transformers.*", "fitz.*", "sklearn.*", "torch.*", "fastembed.*", "qdrant_client.*", "langchain.*", "langchain_core.*", "langchain_openai.*", "langchain_qdrant.*", "neo4j.*", "langgraph.*", "langfuse.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

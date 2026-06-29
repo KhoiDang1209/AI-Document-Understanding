@@ -16,6 +16,7 @@ services:
       DOCINTEL_KIE_ONNX_LOCAL_PATH: /models/cord-layoutlmv3-onnx-int8
       DOCINTEL_QDRANT_URL: http://qdrant:6333
       DOCINTEL_NEO4J_URI: bolt://neo4j:7687
+      DOCINTEL_LANGFUSE_HOST: http://langfuse:3000
     volumes:
       - ../models/cord-layoutlmv3-onnx-int8:/models/cord-layoutlmv3-onnx-int8:ro
     depends_on:
@@ -121,6 +122,29 @@ services:
     volumes:
       - neo4j-data:/data
 
+  langfuse-postgres:
+    image: postgres:16
+    container_name: docintel-langfuse-postgres
+    environment:
+      POSTGRES_USER: langfuse
+      POSTGRES_PASSWORD: langfuse
+      POSTGRES_DB: langfuse
+    volumes:
+      - langfuse-postgres-data:/var/lib/postgresql/data
+
+  langfuse:
+    image: langfuse/langfuse:2
+    container_name: docintel-langfuse
+    depends_on:
+      - langfuse-postgres
+    environment:
+      DATABASE_URL: postgresql://langfuse:langfuse@langfuse-postgres:5432/langfuse
+      NEXTAUTH_SECRET: local-dev-secret
+      SALT: local-dev-salt
+      NEXTAUTH_URL: http://localhost:3000
+    ports:
+      - "3000:3000"
+
 volumes:
   mlflow-data:
   minio-data:
@@ -129,3 +153,4 @@ volumes:
   grafana-data:
   qdrant-data:
   neo4j-data:
+  langfuse-postgres-data:
