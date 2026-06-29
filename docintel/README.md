@@ -117,3 +117,57 @@ the recommended path for laptop CPU serving (no MLflow / MinIO required at start
 |----------|---------|
 | `notebooks/cuad_finetune.ipynb` | Fine-tune DeBERTa-v3-base on CUAD; register `cuad-extractor` |
 | `notebooks/cuad_onnx_export.ipynb` | Export fp32 → INT8 ONNX; eval F1/ANLS/AUPR/CER; register `cuad-extractor-onnx-int8` |
+
+## Contract Intelligence Agent (C4)
+
+The C4 agent chains the C1–C3 capabilities behind a single `POST /agent` call. It is a
+[LangGraph](https://langchain-ai.github.io/langgraph/) state machine that orchestrates the
+existing tools — it adds no new model, only composition.
+
+### Endpoint
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/agent` | Run the agent on a compound task; returns an `AgentResponse` (answer + citations + trace id) |
+
+### Flow
+
+```
+route → retrieve | graph_query → generate → critique ⤶ (bounded retry)
+```
+
+- **route** — reuses C3's rule-based router (`graph` for expiration/renewal questions, else `vector`).
+- **retrieve** — C3 graph query for graph routes, C2 vector retrieval otherwise.
+- **generate** — reuses C2's `generate_or_degrade` to produce a grounded answer from the citations.
+- **critique** — if no citations were found and the retry budget remains, fall back to vector
+  retrieval and retry once. The pass count is capped by `DOCINTEL_AGENT_MAX_RETRIES` (default `1`),
+  so the graph cannot loop unbounded.
+
+### Degraded path
+
+Graceful degradation is mandatory: when the LLM endpoint (`DOCINTEL_LLM_BASE_URL`) is unset or
+unreachable, `/agent` still returns HTTP 200 with the deterministic tool outputs gathered so far,
+`answer: null`, and `status: "degraded"`. The retrieval and routing steps run without an LLM.
+
+### Tracing (self-hosted Langfuse)
+
+Every node is traced to a self-hosted [Langfuse](https://langfuse.com) instance when configured.
+Tracing is strictly best-effort — a tracing error is logged and swallowed, never breaking a request.
+
+```bash
+docker compose up langfuse           # starts Langfuse + its Postgres
+export DOCINTEL_LANGFUSE_HOST=http://localhost:3000
+export DOCINTEL_LANGFUSE_PUBLIC_KEY=pk-...
+export DOCINTEL_LANGFUSE_SECRET_KEY=sk-...
+```
+
+When both keys are set, the returned `trace_id` points at the run in the Langfuse UI; otherwise it
+is `null` and the agent runs untraced.
+
+### Example
+
+```bash
+curl -X POST http://localhost:8000/agent \
+  -H 'Content-Type: application/json' \
+  -d '{"task": "Which contracts expire within 90 days?"}'
+```

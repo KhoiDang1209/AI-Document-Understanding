@@ -8,8 +8,9 @@ import yaml
 
 COMPOSE_FILE = Path(__file__).resolve().parent.parent / "docker-compose.yml"
 
-# Core MLOps spine, the Phase 5 observability stack, the C2 Qdrant vector store, and the
-# C3 Neo4j knowledge graph. The Streamlit UI runs locally (not containerised).
+# Core MLOps spine, the Phase 5 observability stack, the C2 Qdrant vector store, the
+# C3 Neo4j knowledge graph, and the C4 self-hosted Langfuse tracing stack. The Streamlit
+# UI runs locally (not containerised).
 EXPECTED_SERVICES = {
     "api",
     "mlflow",
@@ -20,6 +21,8 @@ EXPECTED_SERVICES = {
     "grafana",
     "qdrant",
     "neo4j",
+    "langfuse",
+    "langfuse-postgres",
 }
 
 
