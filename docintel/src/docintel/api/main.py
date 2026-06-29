@@ -12,7 +12,7 @@ from prometheus_fastapi_instrumentator import Instrumentator
 
 from docintel import __version__
 from docintel.api.metrics import build_metrics
-from docintel.api.routes import ask, contracts, documents, extract, health
+from docintel.api.routes import agent, ask, contracts, documents, extract, health
 from docintel.config import get_settings
 from docintel.logging_config import configure_logging
 
@@ -31,6 +31,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.rag_store = None
     app.state.rag_llm = None
     app.state.graph_store = None
+    app.state.agent_tracer = None
     logger.info(
         "service.startup",
         extra={"environment": settings.environment, "version": __version__},
@@ -60,6 +61,7 @@ def create_app() -> FastAPI:
     app.include_router(documents.router)
     app.include_router(contracts.router)
     app.include_router(ask.router)
+    app.include_router(agent.router)
     return app
 
 
