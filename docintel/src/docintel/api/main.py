@@ -36,6 +36,10 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         extra={"environment": settings.environment, "version": __version__},
     )
     yield
+    graph_store = getattr(app.state, "graph_store", None)
+    close = getattr(graph_store, "close", None)
+    if callable(close):
+        close()
     logger.info("service.shutdown")
 
 

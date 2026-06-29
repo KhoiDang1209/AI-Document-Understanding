@@ -76,3 +76,25 @@ def test_degrade_when_llm_errors() -> None:
     assert resp.answer is None
     assert resp.generation_skipped is True
     assert len(resp.citations) >= 1
+
+
+def test_generate_or_degrade_is_shared() -> None:
+    from langchain_core.language_models.fake_chat_models import FakeListChatModel
+
+    from docintel.rag.answer import generate_or_degrade
+    from docintel.rag.schema import RetrievedChunk
+
+    cite = RetrievedChunk(
+        contract_id="c1",
+        chunk_index=0,
+        chunk_kind="graph",
+        clause_type="Expiration Date",
+        text="expires 2026-01-01",
+        score=1.0,
+        char_start=0,
+        char_end=18,
+    )
+    ok = generate_or_degrade("q", [cite], FakeListChatModel(responses=["A."]), "c1")
+    assert ok.answer == "A." and ok.generation_skipped is False and ok.citations == [cite]
+    degraded = generate_or_degrade("q", [cite], None, "c1")
+    assert degraded.answer is None and degraded.generation_skipped is True

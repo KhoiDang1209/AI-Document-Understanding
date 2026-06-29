@@ -25,6 +25,8 @@ class Metrics:
     validation_total: Counter
     contract_clause_confidence: Histogram
     contract_clause_total: Counter
+    graph_query_latency: Histogram
+    router_decision_total: Counter
 
 
 def build_metrics(registry: CollectorRegistry) -> Metrics:
@@ -52,6 +54,17 @@ def build_metrics(registry: CollectorRegistry) -> Metrics:
             "docintel_contract_clauses",
             "Clauses extracted on /contracts/extract, labelled by ingestion source.",
             labelnames=("source",),
+            registry=registry,
+        ),
+        graph_query_latency=Histogram(
+            "docintel_graph_query_latency_seconds",
+            "Latency of graph template queries on /ask.",
+            registry=registry,
+        ),
+        router_decision_total=Counter(
+            "docintel_router_decisions",
+            "/ask routing decisions, labelled by target.",
+            labelnames=("target",),
             registry=registry,
         ),
     )

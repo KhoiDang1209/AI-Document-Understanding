@@ -8,7 +8,7 @@ from langchain_core.output_parsers import StrOutputParser
 
 from docintel.config import Settings
 from docintel.rag.llm import build_prompt, format_context
-from docintel.rag.schema import AskResponse
+from docintel.rag.schema import AskResponse, RetrievedChunk
 from docintel.rag.store import search
 
 
@@ -18,16 +18,13 @@ def generate_answer(llm: Any, question: str, context: str) -> str:
     return str(chain.invoke({"question": question, "context": context}))
 
 
-def answer_question(
+def generate_or_degrade(
     question: str,
-    store: Any,
+    citations: list[RetrievedChunk],
     llm: Any | None,
-    settings: Settings,
-    contract_id: str | None = None,
-    top_k: int | None = None,
+    contract_id: str | None,
 ) -> AskResponse:
-    """Retrieve top-k chunks, then generate a grounded answer or degrade to citations."""
-    citations = search(store, question, top_k or settings.rag_top_k, contract_id)
+    """Generate a grounded answer from citations, or degrade to citations-only."""
     if llm is None:
         return AskResponse(
             question=question,
@@ -53,3 +50,16 @@ def answer_question(
         contract_id=contract_id,
         citations=citations,
     )
+
+
+def answer_question(
+    question: str,
+    store: Any,
+    llm: Any | None,
+    settings: Settings,
+    contract_id: str | None = None,
+    top_k: int | None = None,
+) -> AskResponse:
+    """Retrieve top-k chunks, then generate a grounded answer or degrade to citations."""
+    citations = search(store, question, top_k or settings.rag_top_k, contract_id)
+    return generate_or_degrade(question, citations, llm, contract_id)
