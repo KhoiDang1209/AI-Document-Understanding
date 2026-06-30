@@ -66,6 +66,28 @@ Validation **annotates, never blocks**: a receipt that fails reconciliation stil
 | `GET /metrics` | Prometheus exposition (HTTP + custom KIE/validation metrics) |
 | `GET /docs` | Interactive Swagger UI |
 
+## Contract Intelligence (C1–C4)
+
+The contract platform chains extraction, RAG, GraphRAG, and an agent. See
+[docs/architecture.md](docs/architecture.md) for the full flow and degradation matrix.
+
+| Endpoint | Stage | Purpose |
+| --- | --- | --- |
+| `POST /contracts/extract` | C1 | PDF → clauses; auto-indexes into RAG + graph |
+| `GET /contracts/{id}` | C1 | Fetch a persisted contract |
+| `POST /ask` | C2/C3 | Grounded answer (graph or vector), with citations |
+| `POST /agent` | C4 | LangGraph agent over a compound task |
+
+```bash
+uvicorn docintel.api.main:app --reload     # API
+streamlit run src/docintel/ui/app.py        # UI (Extract / Ask / Agent tabs)
+docintel-demo                               # end-to-end HTTP walkthrough
+```
+
+The generative LLM (for `/ask` and `/agent`) is optional and the only GPU-bound
+component; without it those endpoints return citations-only. See the architecture
+doc for the `DOCINTEL_LLM_*` settings.
+
 ## Services & Hosts
 
 `docker compose up` (from `docintel/`) brings up seven services. All ports are published to `localhost`:
@@ -187,6 +209,7 @@ uv run pytest                 # one slow real-OCR test is deselected by default
 | Document | Purpose |
 |---|---|
 | [`docs/pipeline.md`](docs/pipeline.md) | End-to-end reference architecture |
+| [`docs/architecture.md`](docs/architecture.md) | Contract Intelligence (C1–C4) flow & degradation matrix |
 | [`docs/plan.md`](docs/plan.md) | Phased build roadmap |
 | [`docs/proposal.md`](docs/proposal.md) | System design & tech-stack decisions |
 | [`docs/research.md`](docs/research.md) | Environment, feasibility, datasets, scope |
