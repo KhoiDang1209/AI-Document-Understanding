@@ -91,6 +91,7 @@ agent = [
 docintel-download-data = "docintel.scripts.download_data:main"
 docintel-import-kie = "docintel.kie.import_run:main"
 docintel-benchmark-kie = "docintel.optimize.run_benchmark:main"
+docintel-demo = "docintel.scripts.demo_pipeline:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/docintel"]
