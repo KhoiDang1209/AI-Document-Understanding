@@ -51,6 +51,8 @@ mlartifacts/
 data/
 models/
 logs/
+cuad-extractor-bundle*/
+cuad-extractor-bundle*.zip
 
 # IDE / OS
 .idea/
