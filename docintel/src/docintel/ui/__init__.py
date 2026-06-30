@@ -1,1 +1,1 @@
-"""Streamlit UI layer: upload a receipt and view the extracted result."""
+"""Streamlit UI layer: upload a contract and run extract / ask / agent."""
