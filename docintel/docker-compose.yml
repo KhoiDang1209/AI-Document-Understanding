@@ -115,7 +115,7 @@ services:
     image: neo4j:5.23
     container_name: docintel-neo4j
     environment:
-      NEO4J_AUTH: neo4j/neo4j
+      NEO4J_AUTH: neo4j/docintelpass
     ports:
       - "7474:7474"
       - "7687:7687"

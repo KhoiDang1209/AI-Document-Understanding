@@ -29,13 +29,19 @@ def best_spans_from_window(
 ) -> list[WindowSpan]:
     """Return the top-``n_best`` (start, end) spans for one tokenized window.
 
-    Tokens whose offset is ``(0, 0)`` (special/question tokens) are skipped as
-    span endpoints. Scores are ``start_logit + end_logit``.
+    Tokens whose offset is ``(0, 0)`` (special/question/padding tokens) are
+    excluded as span endpoints *before* ranking, so padding logits cannot crowd
+    out real answer tokens. Scores are ``start_logit + end_logit``.
     """
     start = np.asarray(start_logits)
     end = np.asarray(end_logits)
-    starts = np.argsort(start)[::-1][:n_best]
-    ends = np.argsort(end)[::-1][:n_best]
+    candidates = np.array(
+        [i for i, off in enumerate(offset_mapping) if tuple(off) != (0, 0)], dtype=np.int64
+    )
+    if candidates.size == 0:
+        return []
+    starts = candidates[np.argsort(start[candidates])[::-1][:n_best]]
+    ends = candidates[np.argsort(end[candidates])[::-1][:n_best]]
     spans: list[WindowSpan] = []
     for s in starts:
         for e in ends:
@@ -43,8 +49,6 @@ def best_spans_from_window(
                 continue
             s_off = offset_mapping[int(s)]
             e_off = offset_mapping[int(e)]
-            if s_off == (0, 0) or e_off == (0, 0):
-                continue
             spans.append(
                 WindowSpan(
                     start_char=int(s_off[0]),

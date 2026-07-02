@@ -59,7 +59,6 @@ class CuadQaOnnxExtractor:
     def load(cls, settings: Settings, tracking_uri: str | None = None) -> CuadQaOnnxExtractor:
         """Load the INT8 model (local override or MLflow) and build the backend."""
         import onnxruntime as ort
-        from transformers import AutoTokenizer
 
         from docintel.optimize.export import download_registered_model
 
@@ -70,8 +69,32 @@ class CuadQaOnnxExtractor:
         if onnx_path is None:
             raise FileNotFoundError(f"No .onnx file found under bundle: {bundle}")
         session = ort.InferenceSession(str(onnx_path))
-        tokenizer = AutoTokenizer.from_pretrained(settings.contract_model_name)  # type: ignore[no-untyped-call]
+        tokenizer = cls._load_tokenizer(Path(bundle), settings)
         return cls(session, tokenizer, settings)
+
+    @staticmethod
+    def _load_tokenizer(bundle: Path, settings: Settings) -> Any:
+        """Load the fast tokenizer from ``tokenizer.json`` in the bundle if present.
+
+        The base ``deberta-v3`` slow->fast SentencePiece conversion is broken on
+        transformers 4.57, so the bundled ``tokenizer.json`` (which embeds vocab and
+        the ``[CLS] q [SEP] c [SEP]`` pair template) is loaded directly.
+        """
+        from transformers import AutoTokenizer, PreTrainedTokenizerFast
+
+        tok_path = next(bundle.rglob("tokenizer.json"), None)
+        if tok_path is not None:
+            return PreTrainedTokenizerFast(
+                tokenizer_file=str(tok_path),
+                cls_token="[CLS]",
+                sep_token="[SEP]",
+                pad_token="[PAD]",
+                unk_token="[UNK]",
+                mask_token="[MASK]",
+                bos_token="[CLS]",
+                eos_token="[SEP]",
+            )
+        return AutoTokenizer.from_pretrained(settings.contract_model_name)  # type: ignore[no-untyped-call]
 
     def _encode(self, question: str, text: str) -> Any:
         """Tokenize (question, text) into overflowing windows with offset maps."""

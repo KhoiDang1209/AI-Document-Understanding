@@ -53,6 +53,7 @@ models/
 logs/
 cuad-extractor-bundle*/
 cuad-extractor-bundle*.zip
+cuad-extractor-onnx-*/
 
 # IDE / OS
 .idea/
