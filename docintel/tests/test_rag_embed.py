@@ -1,14 +1,23 @@
-"""Unit tests for build_embedder's stock vs local-bundle branches (no model downloads)."""
+"""Unit tests for FastEmbedEmbeddings adapter and build_embedder branches (no model downloads)."""
 
 from __future__ import annotations
 
 from typing import Any
 
+import numpy as np
 import pytest
 
 import docintel.rag.embed as embed_module
 from docintel.config import Settings
-from docintel.rag.embed import build_embedder
+from docintel.rag.embed import FastEmbedEmbeddings, build_embedder
+
+
+class _FakeModel:
+    def embed(self, texts: list[str]) -> list[Any]:
+        return [np.array([float(len(t))] * 3) for t in texts]
+
+    def query_embed(self, texts: list[str]) -> list[Any]:
+        return [np.array([1.0, 2.0, 3.0]) for _ in texts]
 
 
 class _FakeTextEmbedding:
@@ -57,3 +66,23 @@ def test_build_embedder_registers_once(fake_fastembed: type[_FakeTextEmbedding])
     build_embedder(settings)
     registers = [e for e in fake_fastembed.events if e[0] == "register"]
     assert len(registers) == 1  # idempotent registration
+
+
+def test_embed_documents_returns_lists() -> None:
+    embedder = FastEmbedEmbeddings(_FakeModel())
+    assert embedder.embed_documents(["ab", "cde"]) == [[2.0, 2.0, 2.0], [3.0, 3.0, 3.0]]
+
+
+def test_embed_query_returns_single_vector() -> None:
+    embedder = FastEmbedEmbeddings(_FakeModel())
+    assert embedder.embed_query("x") == [1.0, 2.0, 3.0]
+
+
+@pytest.mark.slow
+def test_build_embedder_real_model_has_384_dims() -> None:
+    from docintel.config import Settings
+    from docintel.rag.embed import build_embedder
+
+    embedder = build_embedder(Settings())
+    vector = embedder.embed_query("termination for convenience")
+    assert len(vector) == 384
