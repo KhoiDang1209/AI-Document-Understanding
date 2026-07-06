@@ -27,8 +27,38 @@ class FastEmbedEmbeddings(Embeddings):
         return list(vector.tolist())
 
 
+_CUSTOM_MODEL_NAME = "docintel/bge-small-cuad"
+_registered_custom_models: set[str] = set()
+
+
+def _register_custom_model(name: str, dim: int) -> None:
+    """Idempotently register the local fine-tuned bundle layout with fastembed."""
+    if name in _registered_custom_models:
+        return
+    from fastembed import TextEmbedding
+    from fastembed.common.model_description import ModelSource, PoolingType
+
+    TextEmbedding.add_custom_model(
+        model=name,
+        pooling=PoolingType.CLS,
+        normalization=True,
+        sources=ModelSource(hf=name),  # never downloaded: a local path is always passed
+        dim=dim,
+        model_file="model.onnx",
+    )
+    _registered_custom_models.add(name)
+
+
 def build_embedder(settings: Settings) -> FastEmbedEmbeddings:
-    """Load the configured fastembed model and wrap it."""
+    """Load the configured fastembed model (local fine-tuned bundle if set) and wrap it."""
     from fastembed import TextEmbedding
 
+    if settings.rag_embedding_local_path:
+        _register_custom_model(_CUSTOM_MODEL_NAME, settings.rag_embedding_dim)
+        return FastEmbedEmbeddings(
+            TextEmbedding(
+                model_name=_CUSTOM_MODEL_NAME,
+                specific_model_path=settings.rag_embedding_local_path,
+            )
+        )
     return FastEmbedEmbeddings(TextEmbedding(model_name=settings.rag_embedding_model))

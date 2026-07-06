@@ -90,6 +90,10 @@ class Settings(BaseSettings):
     # RAG / Vector retrieval (C2)
     rag_embedding_model: str = "BAAI/bge-small-en-v1.5"
     rag_embedding_dim: int = 384
+    rag_embedding_local_path: str | None = Field(
+        default=None,
+        description="Local fine-tuned embedding ONNX bundle; overrides rag_embedding_model.",
+    )
     rag_chunk_size: int = 1200
     rag_chunk_overlap: int = 200
     qdrant_url: str = "http://qdrant:6333"
