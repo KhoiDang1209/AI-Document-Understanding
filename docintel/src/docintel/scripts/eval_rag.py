@@ -44,6 +44,10 @@ def _covering_chunk_indices(chunks: list[Any], answer_start: int) -> set[int]:
     return {c.chunk_index for c in chunks if c.char_start <= answer_start < c.char_end}
 
 
+def _parse_top_ks(raw: str) -> tuple[int, ...]:
+    return tuple(int(part) for part in raw.split(","))
+
+
 def _sample_contracts(dataset: Any, sample: int, seed: int) -> list[str]:
     titles = sorted({ex["title"] for ex in dataset})
     random.Random(seed).shuffle(titles)
@@ -148,10 +152,19 @@ def main() -> None:
     parser.add_argument(
         "--raw-query", action="store_true", help="Use the raw CUAD template question."
     )
+    parser.add_argument(
+        "--top-ks", type=str, default="1,3,5", help="Comma-separated recall@k cutoffs."
+    )
     parser.add_argument("--out", type=str, default="")
     args = parser.parse_args()
 
-    metrics = run(args.sample, args.seed, rerank=not args.no_rerank, focused=not args.raw_query)
+    metrics = run(
+        args.sample,
+        args.seed,
+        top_ks=_parse_top_ks(args.top_ks),
+        rerank=not args.no_rerank,
+        focused=not args.raw_query,
+    )
     print(json.dumps(metrics, indent=2))
     if args.out:
         with open(args.out, "w", encoding="utf-8") as handle:

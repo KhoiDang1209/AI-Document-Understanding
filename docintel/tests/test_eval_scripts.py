@@ -70,3 +70,8 @@ def test_graph_build_cases_shape() -> None:
     assert cases and all(isinstance(q, str) and isinstance(s, set) for q, s in cases)
     assert date(2019, 1, 1) == eval_graph._REFERENCE_DATE
     assert isinstance(Settings().graph_default_within_days, int)
+
+
+def test_rag_parse_top_ks() -> None:
+    assert eval_rag._parse_top_ks("1,3,5,30") == (1, 3, 5, 30)
+    assert eval_rag._parse_top_ks("5") == (5,)
