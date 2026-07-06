@@ -17,6 +17,8 @@ from docintel.graph.store import build_graph_store
 from docintel.rag.answer import answer_question, generate_or_degrade
 from docintel.rag.embed import build_embedder
 from docintel.rag.llm import build_llm
+from docintel.rag.query import focus_query
+from docintel.rag.rerank import build_reranker
 from docintel.rag.schema import AskRequest, AskResponse
 from docintel.rag.store import build_vector_store
 
@@ -59,6 +61,20 @@ def get_rag_llm(request: Request, settings: Settings = Depends(get_settings)) ->
     return llm
 
 
+def get_rag_reranker(request: Request, settings: Settings = Depends(get_settings)) -> Any | None:  # noqa: B008
+    """Reranker dependency: loaded once; None when disabled or when loading fails."""
+    if getattr(request.app.state, "rag_reranker_loaded", False):
+        return request.app.state.rag_reranker
+    try:
+        reranker = build_reranker(settings)
+    except Exception:
+        logger.warning("rag.reranker.unavailable", exc_info=True)
+        reranker = None
+    request.app.state.rag_reranker = reranker
+    request.app.state.rag_reranker_loaded = True
+    return reranker
+
+
 def ensure_graph_store(app: Any, settings: Settings) -> Any:
     """Build the graph store once and cache it on app.state (None when disabled)."""
     store = getattr(app.state, "graph_store", None)
@@ -96,6 +112,7 @@ def ask(
     store: Any = Depends(get_rag_store),  # noqa: B008
     graph_store: Any | None = Depends(get_graph_store),  # noqa: B008
     llm: Any | None = Depends(get_rag_llm),  # noqa: B008
+    reranker: Any | None = Depends(get_rag_reranker),  # noqa: B008
     metrics: Metrics = Depends(get_metrics),  # noqa: B008
 ) -> AskResponse:
     """Route to graph or vector retrieval, then generate a grounded answer or degrade."""
@@ -116,7 +133,16 @@ def ask(
         metrics.graph_query_latency.observe(time.perf_counter() - start)
         return generate_or_degrade(req.question, citations, llm, req.contract_id)
     try:
-        return answer_question(req.question, store, llm, settings, req.contract_id, req.top_k)
+        return answer_question(
+            req.question,
+            store,
+            llm,
+            settings,
+            req.contract_id,
+            req.top_k,
+            reranker=reranker,
+            retrieval_query=focus_query(req.question),
+        )
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Vector store unavailable."

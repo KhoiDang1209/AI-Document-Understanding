@@ -95,6 +95,9 @@ class Settings(BaseSettings):
     qdrant_url: str = "http://qdrant:6333"
     qdrant_collection: str = "contract_chunks"
     rag_top_k: int = 5
+    rag_sparse_model: str = "Qdrant/bm25"
+    rag_rerank_model: str = "Xenova/ms-marco-MiniLM-L-6-v2"
+    rag_rerank_candidates: int = 30
     llm_base_url: str | None = None
     llm_api_key: str | None = None
     llm_model: str = "Qwen/Qwen2.5-7B-Instruct"

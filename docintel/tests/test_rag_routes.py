@@ -9,7 +9,7 @@ from langchain_core.language_models.fake_chat_models import FakeListChatModel
 from qdrant_client import QdrantClient
 
 from docintel.api.main import create_app
-from docintel.api.routes.ask import get_rag_llm, get_rag_store
+from docintel.api.routes.ask import get_rag_llm, get_rag_reranker, get_rag_store
 from docintel.config import Settings, get_settings
 from docintel.contracts.schema import ExtractedClause
 from docintel.rag.index import index_contract
@@ -53,6 +53,7 @@ def test_ask_degrades_without_llm() -> None:
     app.dependency_overrides[get_settings] = lambda: settings
     app.dependency_overrides[get_rag_store] = lambda: store
     app.dependency_overrides[get_rag_llm] = lambda: None
+    app.dependency_overrides[get_rag_reranker] = lambda: None
     with TestClient(app) as client:
         resp = client.post("/ask", json={"question": "governing law?", "contract_id": "c1"})
     assert resp.status_code == 200
@@ -69,10 +70,30 @@ def test_ask_generates_with_llm() -> None:
     app.dependency_overrides[get_settings] = lambda: settings
     app.dependency_overrides[get_rag_store] = lambda: store
     app.dependency_overrides[get_rag_llm] = lambda: FakeListChatModel(responses=["NY law."])
+    app.dependency_overrides[get_rag_reranker] = lambda: None
     with TestClient(app) as client:
         resp = client.post("/ask", json={"question": "governing law?"})
     assert resp.status_code == 200
     assert resp.json()["answer"] == "NY law."
+
+
+def test_get_rag_reranker_is_none_when_disabled_and_cached() -> None:
+    from types import SimpleNamespace
+
+    from docintel.api.routes.ask import get_rag_reranker
+
+    request = SimpleNamespace(app=SimpleNamespace(state=SimpleNamespace()))
+    assert get_rag_reranker(request, Settings(rag_rerank_model="")) is None
+    assert request.app.state.rag_reranker_loaded is True
+
+
+def test_get_rag_reranker_degrades_to_none_when_load_fails() -> None:
+    from types import SimpleNamespace
+
+    from docintel.api.routes.ask import get_rag_reranker
+
+    request = SimpleNamespace(app=SimpleNamespace(state=SimpleNamespace()))
+    assert get_rag_reranker(request, Settings(rag_rerank_model="not/a-model")) is None
 
 
 def test_ask_returns_503_when_store_unavailable() -> None:
@@ -85,6 +106,7 @@ def test_ask_returns_503_when_store_unavailable() -> None:
     app.dependency_overrides[get_settings] = lambda: settings
     app.dependency_overrides[get_rag_store] = lambda: _BoomStore()
     app.dependency_overrides[get_rag_llm] = lambda: None
+    app.dependency_overrides[get_rag_reranker] = lambda: None
     with TestClient(app) as client:
         resp = client.post("/ask", json={"question": "x"})
     assert resp.status_code == 503

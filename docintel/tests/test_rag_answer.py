@@ -78,6 +78,53 @@ def test_degrade_when_llm_errors() -> None:
     assert len(resp.citations) >= 1
 
 
+def test_retrieval_query_overrides_search_text_but_not_question() -> None:
+    settings = Settings(
+        rag_embedding_dim=_DIM,
+        qdrant_collection="t",
+        rag_chunk_size=25,
+        rag_chunk_overlap=0,
+        rag_top_k=5,
+    )
+    store = build_vector_store(
+        settings, DeterministicFakeEmbedding(size=_DIM), client=QdrantClient(location=":memory:")
+    )
+    text = "escrow deposit duty. insurance coverage. termination notice."
+    index_contract("c1", text, [], store, settings)
+    resp = answer_question(
+        "highlight the relevant parts",
+        store,
+        None,
+        settings,
+        contract_id="c1",
+        retrieval_query="escrow",
+    )
+    assert resp.question == "highlight the relevant parts"
+    assert "escrow" in resp.citations[0].text
+
+
+def test_reranker_reorders_and_truncates_citations() -> None:
+    from docintel.rag.rerank import ChunkReranker
+
+    class _KeywordEncoder:
+        def rerank(self, query: str, texts: list[str]) -> list[float]:
+            return [1.0 if query in text else 0.0 for text in texts]
+
+    settings = _settings()
+    store = _seeded_store(settings)
+    resp = answer_question(
+        "applies",
+        store,
+        None,
+        settings,
+        contract_id="c1",
+        top_k=1,
+        reranker=ChunkReranker(_KeywordEncoder()),
+    )
+    assert len(resp.citations) == 1
+    assert "applies" in resp.citations[0].text
+
+
 def test_generate_or_degrade_is_shared() -> None:
     from langchain_core.language_models.fake_chat_models import FakeListChatModel
 

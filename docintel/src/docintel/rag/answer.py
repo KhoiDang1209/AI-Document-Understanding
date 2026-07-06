@@ -8,6 +8,7 @@ from langchain_core.output_parsers import StrOutputParser
 
 from docintel.config import Settings
 from docintel.rag.llm import build_prompt, format_context
+from docintel.rag.rerank import ChunkReranker, rerank_chunks
 from docintel.rag.schema import AskResponse, RetrievedChunk
 from docintel.rag.store import search
 
@@ -52,6 +53,22 @@ def generate_or_degrade(
     )
 
 
+def retrieve_citations(
+    store: Any,
+    query: str,
+    top_k: int,
+    contract_id: str | None,
+    settings: Settings,
+    reranker: ChunkReranker | None = None,
+) -> list[RetrievedChunk]:
+    """Top-k hybrid search; with a reranker, rescore a wider candidate pool first."""
+    if reranker is None:
+        return search(store, query, top_k, contract_id)
+    pool = max(settings.rag_rerank_candidates, top_k)
+    candidates = search(store, query, pool, contract_id)
+    return rerank_chunks(reranker, query, candidates, top_k)
+
+
 def answer_question(
     question: str,
     store: Any,
@@ -59,7 +76,20 @@ def answer_question(
     settings: Settings,
     contract_id: str | None = None,
     top_k: int | None = None,
+    reranker: ChunkReranker | None = None,
+    retrieval_query: str | None = None,
 ) -> AskResponse:
-    """Retrieve top-k chunks, then generate a grounded answer or degrade to citations."""
-    citations = search(store, question, top_k or settings.rag_top_k, contract_id)
+    """Retrieve top-k chunks, then generate a grounded answer or degrade to citations.
+
+    ``retrieval_query`` overrides the text used for retrieval (e.g. a focused rewrite
+    of a template question); the original ``question`` is still what the LLM answers.
+    """
+    citations = retrieve_citations(
+        store,
+        retrieval_query or question,
+        top_k or settings.rag_top_k,
+        contract_id,
+        settings,
+        reranker,
+    )
     return generate_or_degrade(question, citations, llm, contract_id)

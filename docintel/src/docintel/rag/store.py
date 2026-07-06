@@ -19,6 +19,9 @@ from docintel.rag.schema import RetrievedChunk
 # Fixed namespace for deterministic chunk point ids (reference data, not a tunable knob).
 _POINT_NAMESPACE = uuid.UUID("6f1a2b3c-0000-4000-8000-000000000000")
 
+# Named sparse vector for the BM25 leg (langchain-qdrant's default name).
+_SPARSE_VECTOR_NAME = "langchain-sparse"
+
 
 def chunk_point_id(contract_id: str, chunk_index: int) -> str:
     """Stable UUID for a (contract, chunk) so re-indexing overwrites instead of duplicating."""
@@ -26,28 +29,40 @@ def chunk_point_id(contract_id: str, chunk_index: int) -> str:
 
 
 def ensure_collection(client: Any, collection: str, dim: int) -> None:
-    """Create the cosine collection if it does not yet exist."""
-    from qdrant_client.http.models import Distance, VectorParams
+    """Create the hybrid (dense cosine + BM25 sparse) collection if it does not yet exist."""
+    from qdrant_client.http.models import Distance, Modifier, SparseVectorParams, VectorParams
 
     existing = {c.name for c in client.get_collections().collections}
     if collection not in existing:
         client.create_collection(
             collection_name=collection,
             vectors_config=VectorParams(size=dim, distance=Distance.COSINE),
+            sparse_vectors_config={_SPARSE_VECTOR_NAME: SparseVectorParams(modifier=Modifier.IDF)},
         )
 
 
-def build_vector_store(settings: Settings, embedder: Embeddings, client: Any | None = None) -> Any:
-    """Construct a QdrantVectorStore (no network). Pass ``client`` for tests (``:memory:``)."""
-    from langchain_qdrant import QdrantVectorStore
+def build_vector_store(
+    settings: Settings,
+    embedder: Embeddings,
+    client: Any | None = None,
+    sparse_embedder: Any | None = None,
+) -> Any:
+    """Construct a hybrid QdrantVectorStore (no network). Pass ``client``/``sparse_embedder``
+    for tests (``:memory:``, fake sparse)."""
+    from langchain_qdrant import FastEmbedSparse, QdrantVectorStore, RetrievalMode
     from qdrant_client import QdrantClient
 
     if client is None:
         client = QdrantClient(url=settings.qdrant_url)
+    if sparse_embedder is None:
+        sparse_embedder = FastEmbedSparse(model_name=settings.rag_sparse_model)
     return QdrantVectorStore(
         client=client,
         collection_name=settings.qdrant_collection,
         embedding=embedder,
+        sparse_embedding=sparse_embedder,
+        retrieval_mode=RetrievalMode.HYBRID,
+        sparse_vector_name=_SPARSE_VECTOR_NAME,
         validate_collection_config=False,
     )
 

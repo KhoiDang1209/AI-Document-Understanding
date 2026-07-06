@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import date
 
 from docintel.config import Settings
-from docintel.scripts import eval_graph, eval_rag
+from docintel.scripts import eval_graph, eval_rag, eval_ragas
 
 
 def test_rag_category_parsing() -> None:
@@ -24,6 +24,14 @@ def test_rag_covering_chunk_indices_handles_overlap() -> None:
     assert eval_rag._covering_chunk_indices(chunks, 90) == {0, 1}  # in the overlap
     assert eval_rag._covering_chunk_indices(chunks, 200) == {2}
     assert eval_rag._covering_chunk_indices(chunks, 999) == set()
+
+
+def test_ragas_refusal_detection() -> None:
+    assert eval_ragas._is_refusal("I do not have enough information to answer.")
+    assert eval_ragas._is_refusal("Sorry, I don't have enough information in the context.")
+    assert not eval_ragas._is_refusal(
+        "This Agreement is governed by the laws of the State of New York."
+    )
 
 
 def _fake_cuad() -> list[dict[str, object]]:

@@ -3,8 +3,11 @@
 Indexes paragraph chunks (only) of a CUAD contract sample into an in-memory Qdrant,
 then for each gold-answered clause question measures whether the passage covering the
 gold answer is retrieved in the top-k. Clause chunks are intentionally excluded so the
-metric reflects semantic passage retrieval, not trivial gold-span lookup. LLM-dependent
-RAGAS metrics are out of scope here (need the intermittent Colab judge); run separately.
+metric reflects semantic passage retrieval, not trivial gold-span lookup. Retrieval is
+the production stack: hybrid dense+BM25 search, focused query rewriting (see
+``rag.query``), and cross-encoder reranking — each toggleable for ablation via
+``--raw-query`` / ``--no-rerank``. LLM-dependent RAGAS metrics are out of scope here
+(need the intermittent Colab judge); run separately.
 
 Reproduce::
 
@@ -21,9 +24,12 @@ from collections import defaultdict
 from typing import Any
 
 from docintel.config import get_settings
+from docintel.rag.answer import retrieve_citations
 from docintel.rag.chunk import build_chunks
 from docintel.rag.eval import mrr, recall_at_k
-from docintel.rag.store import build_vector_store, ensure_collection, search, upsert_chunks
+from docintel.rag.query import focus_query
+from docintel.rag.rerank import build_reranker
+from docintel.rag.store import build_vector_store, ensure_collection, upsert_chunks
 
 _CATEGORY = re.compile(r'related to "([^"]+)"')
 
@@ -44,11 +50,18 @@ def _sample_contracts(dataset: Any, sample: int, seed: int) -> list[str]:
     return titles[:sample]
 
 
-def run(sample: int, seed: int, top_ks: tuple[int, ...] = (1, 3, 5)) -> dict[str, Any]:
+def run(
+    sample: int,
+    seed: int,
+    top_ks: tuple[int, ...] = (1, 3, 5),
+    rerank: bool = True,
+    focused: bool = True,
+) -> dict[str, Any]:
     """Index a CUAD sample and return aggregate retrieval metrics."""
     from datasets import load_dataset
 
     settings = get_settings()
+    reranker = build_reranker(settings) if rerank else None
     dataset = load_dataset("theatticusproject/cuad-qa", split="train", trust_remote_code=True)
     keep = set(_sample_contracts(dataset, sample, seed))
 
@@ -92,7 +105,8 @@ def run(sample: int, seed: int, top_ks: tuple[int, ...] = (1, 3, 5)) -> dict[str
                 relevant |= _covering_chunk_indices(chunks, start)
             if not relevant:
                 continue
-            results = search(store, question, max_k, contract_id=title)
+            query = focus_query(question) if focused else question
+            results = retrieve_citations(store, query, max_k, title, settings, reranker)
             retrieved = [str(r.chunk_index) for r in results]
             relevant_ids = {str(i) for i in relevant}
             evaluated += 1
@@ -113,7 +127,15 @@ def run(sample: int, seed: int, top_ks: tuple[int, ...] = (1, 3, 5)) -> dict[str
         "recall_at_max_k_by_category": {
             cat: mean(vals) for cat, vals in sorted(per_category.items())
         },
-        "config": {"sample": sample, "seed": seed, "top_ks": list(top_ks)},
+        "config": {
+            "sample": sample,
+            "seed": seed,
+            "top_ks": list(top_ks),
+            "rerank": rerank,
+            "focused_query": focused,
+            "rerank_model": settings.rag_rerank_model if rerank else None,
+            "sparse_model": settings.rag_sparse_model,
+        },
     }
 
 
@@ -122,10 +144,14 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="C2 retrieval recall@k / MRR over CUAD.")
     parser.add_argument("--sample", type=int, default=40)
     parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--no-rerank", action="store_true", help="Skip cross-encoder reranking.")
+    parser.add_argument(
+        "--raw-query", action="store_true", help="Use the raw CUAD template question."
+    )
     parser.add_argument("--out", type=str, default="")
     args = parser.parse_args()
 
-    metrics = run(args.sample, args.seed)
+    metrics = run(args.sample, args.seed, rerank=not args.no_rerank, focused=not args.raw_query)
     print(json.dumps(metrics, indent=2))
     if args.out:
         with open(args.out, "w", encoding="utf-8") as handle:
