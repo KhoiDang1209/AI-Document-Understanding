@@ -34,11 +34,22 @@ every delta to the embedder.
 
 **Recall@5: 0.494 → 0.745 (+51% relative). MRR: 0.373 → 0.528 (+42%). Success bar (≥ 0.65) met.**
 
+(All rows are measured at retrieval depth 30, so MRR credits gold passages found at ranks 6–30;
+that is why the stock row shows MRR 0.373 rather than the 0.345 in the retrieval-boost report,
+which measured at depth 5. Same stack, same queries — deeper list.)
+
 Two findings, one expected and one not:
 
 1. **The fine-tune fixed the first stage, as designed.** Pool quality (recall@30) jumped 0.816 →
-   0.949; the three formerly-zero categories (Non-Compete, Price Restrictions,
-   Unlimited/All-You-Can-Eat-License) now reach 0.75–1.0 in the pool.
+   0.949, and the gains reach the top-5 at production settings: a dedicated run at the serving
+   depth (`--no-rerank`, default top-ks; `eval_rag_finetuned_norerank_k5.json`) puts the three
+   formerly-zero categories at **recall@5 0.55 / 1.00 / 1.00** (Non-Compete, Price Restrictions,
+   Unlimited/All-You-Can-Eat-License — all 0.00 in the retrieval-boost report). Five categories
+   sit at a perfect 1.00 (incl. Renewal Term, No-Solicit Of Customers); the weakest are now
+   Competitive Restriction Exception (0.43), Revenue/Profit Sharing (0.48), and Exclusivity
+   (0.49) — diffuse, but no longer hopeless. Headline metrics at this depth: recall@5 0.741,
+   MRR 0.524 — a hair off the depth-30 run's 0.745/0.528 because RRF fusion order shifts
+   slightly with retrieval depth; both clear the bar.
 2. **The generic reranker flipped from help to harm.** On the stock embedder, ms-marco MiniLM
    added +0.026 recall@5; on the fine-tuned ordering it *subtracts* 0.232 (0.745 → 0.513). The
    CUAD-tuned dense+BM25 ordering now encodes domain knowledge the generic cross-encoder cannot
