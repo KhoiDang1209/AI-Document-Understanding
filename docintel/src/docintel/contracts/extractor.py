@@ -84,7 +84,7 @@ class CuadQaOnnxExtractor:
 
         tok_path = next(bundle.rglob("tokenizer.json"), None)
         if tok_path is not None:
-            return PreTrainedTokenizerFast(
+            return PreTrainedTokenizerFast(  # type: ignore[no-untyped-call]
                 tokenizer_file=str(tok_path),
                 cls_token="[CLS]",
                 sep_token="[SEP]",
@@ -121,7 +121,15 @@ class CuadQaOnnxExtractor:
                 if name in self._input_names and name in encoding
             }
             start_logits, end_logits = self._session.run(None, feeds)
-            offsets = [tuple(o) for o in encoding["offset_mapping"][i]]
+            # Mask special/question tokens to (0, 0): in a (question, context) pair the
+            # question tokens carry real offsets into the *question* string, so without
+            # this they would decode to garbage spans against the contract text. Only
+            # context tokens (sequence id 1) are valid span endpoints.
+            seq_ids = encoding.sequence_ids(i)
+            offsets = [
+                tuple(off) if seq_ids[j] == 1 else (0, 0)
+                for j, off in enumerate(encoding["offset_mapping"][i])
+            ]
             spans.extend(
                 best_spans_from_window(
                     start_logits[0],
