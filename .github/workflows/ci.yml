@@ -20,7 +20,10 @@ jobs:
           cache: pip
 
       - name: Install
-        run: pip install -e ".[dev]"
+        # Runtime extras are required at import time: conftest builds the app,
+        # which wires every router (rag/agent/graph/contracts), so pytest
+        # collection imports langchain-core, langgraph, neo4j and pymupdf.
+        run: pip install -e ".[dev,serve,kie,contracts,rag,graph,agent]"
 
       - name: Lint
         run: ruff check .

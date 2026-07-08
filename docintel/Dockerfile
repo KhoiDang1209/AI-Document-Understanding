@@ -19,10 +19,14 @@ RUN apt-get update \
 COPY pyproject.toml README.md ./
 COPY src ./src
 # Pin a CPU-only torch/torchvision (PyPI's default Linux wheel is CUDA — huge),
-# then install the project with the runtime extras the serving path needs:
-# serve (onnxruntime, transformers, prometheus instrumentator) and kie (mlflow, boto3).
+# then install the project with the runtime extras the serving path needs. The
+# app factory wires every router unconditionally (api/main.py), so the image must
+# carry the deps those routers import at module load:
+#   serve (onnxruntime, transformers, prometheus instrumentator), kie (mlflow, boto3),
+#   contracts (pymupdf/liteparse), rag (langchain-core, fastembed, qdrant),
+#   graph (neo4j), agent (langgraph, langfuse).
 RUN pip install --index-url https://download.pytorch.org/whl/cpu torch torchvision \
-    && pip install ".[serve,kie]"
+    && pip install ".[serve,kie,contracts,rag,graph,agent]"
 # Bake docTR weights into the image so the running container needs no network.
 RUN python -c "from doctr.models import ocr_predictor; ocr_predictor(pretrained=True)"
 
