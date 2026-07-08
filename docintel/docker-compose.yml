@@ -16,6 +16,9 @@ services:
       DOCINTEL_KIE_ONNX_LOCAL_PATH: /models/cord-layoutlmv3-onnx-int8
       DOCINTEL_QDRANT_URL: http://qdrant:6333
       DOCINTEL_NEO4J_URI: bolt://neo4j:7687
+      # Must match the neo4j service's NEO4J_AUTH password below, otherwise the
+      # app falls back to the default and graph auth fails (/ask graph 503).
+      DOCINTEL_NEO4J_PASSWORD: docintelpass
       DOCINTEL_LANGFUSE_HOST: http://langfuse:3000
     volumes:
       - ../models/cord-layoutlmv3-onnx-int8:/models/cord-layoutlmv3-onnx-int8:ro

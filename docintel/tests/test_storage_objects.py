@@ -78,3 +78,17 @@ def test_ensure_bucket_reraises_on_non_404() -> None:
     with pytest.raises(ClientError):
         ensure_bucket(client, "documents")
     assert client.buckets == set()
+
+
+def test_get_image_reraises_on_non_missing_error() -> None:
+    """A transient/auth failure must propagate, not masquerade as a missing object."""
+    import pytest
+    from botocore.exceptions import ClientError
+
+    class _AccessDeniedS3(_FakeS3):
+        def get_object(self, Bucket: str, Key: str) -> dict[str, Any]:
+            raise ClientError({"Error": {"Code": "AccessDenied"}}, "GetObject")
+
+    client = _AccessDeniedS3()
+    with pytest.raises(ClientError):
+        get_image(client, "documents", "a.png")

@@ -29,3 +29,14 @@ EXPECTED_SERVICES = {
 def test_core_services() -> None:
     compose = yaml.safe_load(COMPOSE_FILE.read_text(encoding="utf-8"))
     assert set(compose["services"]) == EXPECTED_SERVICES
+
+
+def test_api_neo4j_password_matches_neo4j_auth() -> None:
+    """The api service must pass the same neo4j password the container is created with,
+    or graph-routed /ask queries fail auth and fall back silently."""
+    compose = yaml.safe_load(COMPOSE_FILE.read_text(encoding="utf-8"))
+    _, _, expected_password = compose["services"]["neo4j"]["environment"]["NEO4J_AUTH"].partition(
+        "/"
+    )
+    api_env = compose["services"]["api"]["environment"]
+    assert api_env.get("DOCINTEL_NEO4J_PASSWORD") == expected_password

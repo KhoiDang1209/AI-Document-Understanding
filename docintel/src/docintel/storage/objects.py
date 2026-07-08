@@ -46,12 +46,20 @@ def put_image(client: Any, bucket: str, key: str, data: bytes, content_type: str
 
 
 def get_image(client: Any, bucket: str, key: str) -> bytes | None:
-    """Fetch image bytes for ``key``; return None if the object is absent."""
+    """Fetch image bytes for ``key``; return None only if the object is absent.
+
+    A missing object raises ``ClientError`` with a 404/NoSuchKey code — only that
+    case maps to ``None``. Other errors (forbidden, endpoint unreachable, bad
+    credentials) propagate so an outage isn't reported to the caller as a 404.
+    """
     from botocore.exceptions import ClientError
 
     try:
         response = client.get_object(Bucket=bucket, Key=key)
-    except ClientError:
-        return None
+    except ClientError as exc:
+        code = exc.response.get("Error", {}).get("Code")
+        if code in {"404", "NoSuchKey", "NotFound"}:
+            return None
+        raise
     data: bytes = response["Body"].read()
     return data
