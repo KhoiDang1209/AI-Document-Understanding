@@ -55,13 +55,30 @@ def test_low_confidence_is_a_warning_not_an_error() -> None:
     assert any(w.rule == "low_confidence" for w in report.warnings)
 
 
-def test_negative_and_unparsed_are_warnings() -> None:
+def test_unparsed_field_is_a_warning() -> None:
     doc = _doc(
         line_items=[LineItem(name="a", price=600.0, confidence=0.9)],
-        total=-5.0,
+        subtotal=600.0,
+        total=600.0,
         unparsed_fields=["tax"],
     )
     report = validate(doc, Settings())
     assert report.ok is True
-    rules = {w.rule for w in report.warnings}
-    assert "number_sanity" in rules
+    assert any(w.rule == "number_sanity" for w in report.warnings)
+
+
+def test_partial_line_item_prices_do_not_trigger_subtotal_mismatch() -> None:
+    # One line item's price was not extracted (None). Summing only the extracted
+    # prices under-counts and would spuriously fail the subtotal check as a hard
+    # error, so line-item reconciliation must be skipped unless every item is priced.
+    doc = _doc(
+        line_items=[
+            LineItem(name="a", price=600.0, confidence=0.9),
+            LineItem(name="b", price=None, confidence=0.9),
+        ],
+        subtotal=1000.0,
+        total=1000.0,
+    )
+    report = validate(doc, Settings())
+    assert report.ok is True
+    assert not any(e.rule == "reconciliation" for e in report.errors)

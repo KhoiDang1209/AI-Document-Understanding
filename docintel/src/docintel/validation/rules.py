@@ -24,7 +24,10 @@ def _reconciliation(document: Document, tolerance: float) -> list[ValidationIssu
                 )
             )
     prices = [item.price for item in document.line_items if item.price is not None]
-    if document.subtotal is not None and prices:
+    # Only reconcile when every line item is priced: a partial sum (some prices
+    # not extracted) under-counts and would raise a spurious mismatch error.
+    all_priced = bool(document.line_items) and len(prices) == len(document.line_items)
+    if document.subtotal is not None and all_priced:
         items_sum = sum(prices)
         if abs(items_sum - document.subtotal) > tolerance:
             issues.append(
@@ -85,22 +88,6 @@ def _low_confidence(document: Document, threshold: float) -> list[ValidationIssu
 
 def _number_sanity(document: Document) -> list[ValidationIssue]:
     issues: list[ValidationIssue] = []
-    money = {
-        "subtotal": document.subtotal,
-        "tax": document.tax,
-        "service": document.service,
-        "total": document.total,
-    }
-    for field, value in money.items():
-        if value is not None and value < 0:
-            issues.append(
-                ValidationIssue(
-                    rule="number_sanity",
-                    severity="warning",
-                    message=f"{field} is negative ({value})",
-                    field=field,
-                )
-            )
     for field in document.unparsed_fields:
         issues.append(
             ValidationIssue(

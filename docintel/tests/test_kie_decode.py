@@ -72,6 +72,21 @@ def test_scalar_span_joins_continuation_tokens() -> None:
     assert doc.total == 1591600.0
 
 
+def test_orphan_menu_field_before_first_name_is_not_a_phantom_item() -> None:
+    # A menu sub-field (here a price) tagged before any B-menu.nm has no line
+    # item to attach to. It must be dropped, not opened as a nameless row — that
+    # phantom "first line item" is what the Phase 4 report otherwise reads as a
+    # model-quality failure.
+    preds = [
+        _w("5.000", "B-menu.price"),
+        _w("Coke", "B-menu.nm"),
+        _w("3.000", "B-menu.price"),
+    ]
+    doc = build_document(preds, default_currency="IDR")
+    assert [i.name for i in doc.line_items] == ["Coke"]
+    assert doc.line_items[0].price == 3000.0
+
+
 def test_unparseable_total_recorded() -> None:
     preds = [
         _w("Coke", "B-menu.nm"),

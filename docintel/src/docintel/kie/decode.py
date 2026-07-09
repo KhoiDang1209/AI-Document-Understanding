@@ -70,8 +70,11 @@ def _collect_spans(
             items.append(current)
         if category in _LINE_FIELDS:
             if current is None:
-                current = {"_words": {}, "_conf": []}
-                items.append(current)
+                # A menu sub-field before the first B-menu.nm has no line item to
+                # attach to. Skip it rather than open a nameless row — that phantom
+                # "first line item" is what the Phase 4 report otherwise reads as a
+                # model-quality failure.
+                continue
             field_name = _LINE_FIELDS[category]
             words = current["_words"]
             words.setdefault(field_name, []).append(pred.text)  # type: ignore[attr-defined]
