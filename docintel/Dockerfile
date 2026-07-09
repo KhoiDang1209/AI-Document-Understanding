@@ -27,6 +27,15 @@ COPY src ./src
 #   graph (neo4j), agent (langgraph, langfuse).
 RUN pip install --index-url https://download.pytorch.org/whl/cpu torch torchvision \
     && pip install ".[serve,kie,contracts,rag,graph,agent]"
+
+# Drop root for the runtime. Create the user and switch BEFORE baking the docTR
+# weights so the cache lands under this user's HOME and is found at run time — the
+# container runs as the same user, so a root-owned cache would be re-downloaded.
+RUN useradd --create-home --uid 10001 appuser \
+    && chown -R appuser:appuser /app
+ENV HOME=/home/appuser
+USER appuser
+
 # Bake docTR weights into the image so the running container needs no network.
 RUN python -c "from doctr.models import ocr_predictor; ocr_predictor(pretrained=True)"
 
