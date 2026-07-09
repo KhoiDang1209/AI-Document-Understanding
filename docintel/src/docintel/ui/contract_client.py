@@ -43,9 +43,21 @@ def _post(url: str, timeout_s: float, **kwargs: Any) -> dict[str, Any]:
     raise ContractApiError(f"Request failed ({response.status_code}): {_error_detail(response)}")
 
 
-def extract_contract(
-    base_url: str, timeout_s: float, filename: str, data: bytes
-) -> dict[str, Any]:
+def fetch_health(base_url: str, timeout_s: float) -> dict[str, Any]:
+    """GET ``/health`` and return the parsed payload, mapping errors to ContractApiError."""
+    url = f"{base_url.rstrip('/')}/health"
+    try:
+        response = httpx.get(url, timeout=timeout_s)
+    except httpx.TimeoutException as exc:
+        raise ContractApiError("The API timed out while processing the request.") from exc
+    except httpx.HTTPError as exc:
+        raise ContractApiError(f"Could not reach the API at {url}.") from exc
+    if response.is_success:
+        return cast("dict[str, Any]", response.json())
+    raise ContractApiError(f"Request failed ({response.status_code}): {_error_detail(response)}")
+
+
+def extract_contract(base_url: str, timeout_s: float, filename: str, data: bytes) -> dict[str, Any]:
     """POST a PDF to ``/contracts/extract`` and return the parsed ContractDocument JSON."""
     url = f"{base_url.rstrip('/')}/contracts/extract"
     return _post(url, timeout_s, files={"file": (filename, data, _PDF_TYPE)})
@@ -98,3 +110,33 @@ def citation_rows(response: dict[str, Any]) -> list[dict[str, Any]]:
             }
         )
     return rows
+
+
+def _dot_escape(value: str) -> str:
+    """Escape a label for inclusion in a Graphviz DOT string."""
+    return value.replace("\\", "\\\\").replace('"', '\\"')
+
+
+def graph_dot(response: dict[str, Any]) -> str:
+    """Build a Graphviz DOT graph of a response's cited facts (contract -> clause facts).
+
+    Each citation becomes a clause-fact node linked to its contract node, so a
+    graph-routed answer's evidence renders as a small contract/date network.
+    """
+    lines = ["digraph G {", "  rankdir=LR;", "  node [fontsize=10];"]
+    seen_contracts: set[str] = set()
+    for i, chunk in enumerate(response.get("citations", [])):
+        contract = str(chunk.get("contract_id") or "—")
+        clause = str(chunk.get("clause_type") or "fact")
+        text = str(chunk.get("text") or "").strip()
+        contract_node = f"contract:{contract}"
+        if contract not in seen_contracts:
+            seen_contracts.add(contract)
+            lines.append(f'  "{contract_node}" [label="{_dot_escape(contract)}", shape=box];')
+        snippet = text[:40] + "…" if len(text) > 40 else text
+        fact_label = _dot_escape(f"{clause}\n{snippet}" if snippet else clause)
+        fact_node = f"fact:{i}"
+        lines.append(f'  "{fact_node}" [label="{fact_label}", shape=ellipse];')
+        lines.append(f'  "{contract_node}" -> "{fact_node}";')
+    lines.append("}")
+    return "\n".join(lines)

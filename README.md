@@ -208,6 +208,8 @@ uv run pytest                 # one slow real-OCR test is deselected by default
 
 | Document | Purpose |
 |---|---|
+| [`docs/PROJECT_OVERVIEW.md`](docs/PROJECT_OVERVIEW.md) | What we built — the whole story, results, and links |
+| [`docs/RUNBOOK.md`](docs/RUNBOOK.md) | Stand up the stack and walk the demo |
 | [`docs/pipeline.md`](docs/pipeline.md) | End-to-end reference architecture |
 | [`docs/architecture.md`](docs/architecture.md) | Contract Intelligence (C1–C4) flow & degradation matrix |
 | [`docs/plan.md`](docs/plan.md) | Phased build roadmap |

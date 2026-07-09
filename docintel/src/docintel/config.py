@@ -70,6 +70,9 @@ class Settings(BaseSettings):
     # Streamlit UI (Phase 6)
     ui_api_base_url: str = "http://localhost:8000"
     ui_request_timeout_s: float = 120.0
+    # Directory the demo's Metrics view scans for eval_rag*/eval_ragas* JSON. Defaults
+    # to the process CWD (the docintel/ dir when run as documented).
+    ui_eval_dir: str = "."
 
     # Contract Intelligence (C1)
     contract_model_name: str = "microsoft/deberta-v3-base"
