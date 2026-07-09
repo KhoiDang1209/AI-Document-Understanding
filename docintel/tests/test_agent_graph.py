@@ -62,6 +62,26 @@ def test_graph_task_degrades_without_llm() -> None:
     assert [c.contract_id for c in resp.citations] == ["a"]
 
 
+def test_graph_empty_falls_back_to_vector_and_recovers() -> None:
+    # The point of the retry edge: a graph-routed question whose graph store is empty
+    # returns no rows, so the bounded retry must fall back to vector retrieval, recover
+    # a citation, and let generation produce an answer.
+    settings = Settings()
+    deps = AgentDeps(
+        settings=settings,
+        rag_store=_vector_store(settings),  # holds the governing-law chunk
+        graph_store=InMemoryGraphStore(),  # empty -> graph query yields nothing
+        llm=FakeListChatModel(responses=["Recovered from vector."]),
+    )
+    resp = run_agent("which contracts expire within 400000 days?", None, deps)
+    assert resp.status == "ok"
+    assert resp.answer == "Recovered from vector."
+    assert resp.retries == 1
+    assert resp.citations  # recovered via the vector fallback
+    assert "retrieve:graph:0" in resp.steps
+    assert any(s.startswith("retrieve:vector:") for s in resp.steps)
+
+
 def test_retry_caps_and_marks_degraded_when_nothing_found() -> None:
     settings = Settings()  # agent_max_retries=1
     empty_vector = _vector_store(settings)

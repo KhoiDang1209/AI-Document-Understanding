@@ -36,3 +36,44 @@ jobs:
 
       - name: Test
         run: pytest
+
+  graph-parity:
+    # The InMemoryGraphStore fake backs every other graph test; this job stands up a real
+    # Neo4j so the slow, normally-deselected parity test actually runs and proves the fake's
+    # Cypher-equivalent output matches the driver's. Isolated from `quality` so a Neo4j
+    # hiccup can't fail the fast lane.
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: docintel
+    services:
+      neo4j:
+        image: neo4j:5.23
+        env:
+          NEO4J_AUTH: neo4j/docintelpass
+        ports:
+          - 7687:7687
+          - 7474:7474
+        options: >-
+          --health-cmd "wget -q -O /dev/null http://localhost:7474 || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      DOCINTEL_NEO4J_URI: bolt://localhost:7687
+      DOCINTEL_NEO4J_USER: neo4j
+      DOCINTEL_NEO4J_PASSWORD: docintelpass
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install
+        run: pip install -e ".[dev,serve,kie,contracts,rag,graph,agent]"
+
+      - name: Graph parity (live Neo4j)
+        # Clear the ini addopts (`-m 'not slow'`) so the slow-marked parity test is selected.
+        run: pytest tests/test_graph_neo4j_parity.py -o "addopts=" -m slow

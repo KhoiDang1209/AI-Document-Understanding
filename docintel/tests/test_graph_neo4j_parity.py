@@ -31,4 +31,13 @@ def test_cypher_matches_fake() -> None:
     real_rows = real.run_template("auto_renewing_expiring_within", params)
     fake_rows = fake.run_template("auto_renewing_expiring_within", params)
     real.close()
-    assert {r["contract_id"] for r in real_rows} == {r["contract_id"] for r in fake_rows}
+
+    def _by_id(rows: list[dict[str, object]]) -> list[dict[str, object]]:
+        return sorted(rows, key=lambda r: str(r["contract_id"]))
+
+    # Full-row parity, not just the id set: the real Cypher and the in-memory fake must
+    # agree on every projected field — iso_date, the expiration/renewal answer text, and
+    # their char offsets — or graph answers would cite different spans between the two.
+    assert _by_id(real_rows) == _by_id(fake_rows)
+    citation_fields = {"exp_answer", "exp_start", "exp_end", "ren_answer", "ren_start", "ren_end"}
+    assert real_rows and all(citation_fields <= r.keys() for r in real_rows)

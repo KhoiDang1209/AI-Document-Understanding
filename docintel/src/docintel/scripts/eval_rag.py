@@ -23,7 +23,7 @@ import re
 from collections import defaultdict
 from typing import Any
 
-from docintel.config import get_settings
+from docintel.config import Settings, get_settings
 from docintel.rag.answer import retrieve_citations
 from docintel.rag.chunk import build_chunks
 from docintel.rag.eval import mrr, recall_at_k
@@ -46,6 +46,33 @@ def _covering_chunk_indices(chunks: list[Any], answer_start: int) -> set[int]:
 
 def _parse_top_ks(raw: str) -> tuple[int, ...]:
     return tuple(int(part) for part in raw.split(","))
+
+
+def _run_config(
+    sample: int,
+    seed: int,
+    top_ks: tuple[int, ...],
+    rerank: bool,
+    focused: bool,
+    settings: Settings,
+) -> dict[str, Any]:
+    """Provenance block recorded with every run's metrics.
+
+    Records the embedder identity (model name plus the local fine-tuned bundle path,
+    if any) so a stock vs fine-tuned run is distinguishable from the JSON itself, not
+    just its filename — otherwise the two configs are byte-identical.
+    """
+    return {
+        "sample": sample,
+        "seed": seed,
+        "top_ks": list(top_ks),
+        "rerank": rerank,
+        "focused_query": focused,
+        "rerank_model": settings.rag_rerank_model if rerank else None,
+        "sparse_model": settings.rag_sparse_model,
+        "embedding_model": settings.rag_embedding_model,
+        "embedding_local_path": settings.rag_embedding_local_path or None,
+    }
 
 
 def _sample_contracts(dataset: Any, sample: int, seed: int) -> list[str]:
@@ -131,15 +158,7 @@ def run(
         "recall_at_max_k_by_category": {
             cat: mean(vals) for cat, vals in sorted(per_category.items())
         },
-        "config": {
-            "sample": sample,
-            "seed": seed,
-            "top_ks": list(top_ks),
-            "rerank": rerank,
-            "focused_query": focused,
-            "rerank_model": settings.rag_rerank_model if rerank else None,
-            "sparse_model": settings.rag_sparse_model,
-        },
+        "config": _run_config(sample, seed, top_ks, rerank, focused, settings),
     }
 
 
