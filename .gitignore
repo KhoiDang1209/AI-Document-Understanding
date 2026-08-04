@@ -1,6 +1,9 @@
 # Personal / non-project files
 JOB/
 
+# Standalone project staged here for handoff to its own repo
+nyc-taxi-data-platform/
+
 # Local Claude config & skills (kept on disk, not versioned)
 .claude/skills/
 .claude/settings.local.json
