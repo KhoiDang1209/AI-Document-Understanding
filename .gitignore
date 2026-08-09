@@ -4,6 +4,9 @@ JOB/
 # Standalone project staged here for handoff to its own repo
 nyc-taxi-data-platform/
 
+# External learning repo (CUDA study material, not part of this project)
+GPU-Programming-with-CPP-and-CUDA/
+
 # Local Claude config & skills (kept on disk, not versioned)
 .claude/skills/
 .claude/settings.local.json
@@ -57,6 +60,13 @@ logs/
 cuad-extractor-bundle*/
 cuad-extractor-bundle*.zip
 cuad-extractor-onnx-*/
+
+# Personal / stray files not meant for the public repo
+readme_template.txt
+DangDangKhoi_IELTS*.pdf
+cuad_finetune (1).ipynb
+docintel/eval_rag*.json
+docintel/eval_ragas*.csv
 
 # IDE / OS
 .idea/
